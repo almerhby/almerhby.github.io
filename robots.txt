@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://almerhby.github.io/sitemap.xml

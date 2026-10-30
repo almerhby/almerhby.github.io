@@ -1,0 +1,21 @@
+{
+  "name": "د. يحيى أحمد المرهبي — الموقع الأكاديمي والمكتبة الرقمية",
+  "short_name": "د. يحيى المرهبي",
+  "description": "الموقع الأكاديمي والمكتبة الرقمية للدكتور يحيى أحمد المرهبي: كتب ورسائل وأبحاث ومقالات في أصول التربية والفكر الإسلامي والنهوض الحضاري.",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5f1e7",
+  "theme_color": "#0f5b4a",
+  "categories": ["education", "books", "research"],
+  "icons": [
+    {
+      "src": "assets/images/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
