@@ -96,6 +96,7 @@
       Y.featureMeta(latestBook) +
       '<div class="feature-actions">' +
       (latestBook.pdf ? '<button class="btn btn-light" type="button" data-action="pdf-book" data-id="' + esc(latestBook.id) + '">' + I.bookOpen + esc(t('readNow')) + '</button>' : '') +
+      (latestBook.pdf ? '<a class="btn btn-ghost btn-download" href="' + esc(latestBook.pdf) + '" download>' + I.download + esc(t('downloadPdf')) + '</a>' : '') +
       '<button class="btn btn-ghost" type="button" data-action="open-book" data-id="' + esc(latestBook.id) + '">' + esc(t('details')) + '</button>' +
       '<button class="btn btn-brass" type="button" data-action="cite-book" data-id="' + esc(latestBook.id) + '">' + I.quote + esc(t('cite')) + '</button>' +
       '</div></div></div></div></section>' : '';
@@ -113,8 +114,6 @@
       '<div class="hero-links">' + heroSocial + '</div></div>' +
       '<div class="hero-visual"><span class="hero-pattern">' + I.sparkle + '</span>' +
       '<div class="portrait-frame"><div class="portrait-inner">' + Y.portrait() + '</div></div>' +
-      '<div class="portrait-badge"><span class="icon">' + I.cap + '</span><div><strong>' + (ar() ? 'دكتوراه في أصول التربية' : 'PhD in Educational Foundations') + '</strong><span>' + (ar() ? 'جامعة د. باباصاحب أمبدكار المراثوادية، الهند' : 'Dr. Babasaheb Ambedkar Marathwada University') + '</span></div></div>' +
-      (latest ? '<a class="hero-latest" href="' + Y.articleHref(latest) + '"><small>' + esc(t('latestWriting')) + '</small><strong class="' + (Y.titleIsArabicOnly(latest) ? 'ar-text' : '') + '">' + esc(truncate(latestTitle, 46)) + '</strong></a>' : '') +
       '</div></div>' +
       '<div class="stats-strip">' + statsHTML + '</div></div></section>' +
       featureHTML +
@@ -230,7 +229,8 @@
       bio.map((paragraph, index) => '<p class="' + (index === 0 ? 'lead' : '') + '">' + esc(paragraph) + '</p>').join('') +
       '<h2 style="margin-top:42px">' + esc(t('interests')) + '</h2><div class="interest-grid">' + interests.map(interestItem).join('') + '</div>' +
       '<div class="cv-box"><div><h3>' + esc(t('cv')) + '</h3><p>' + esc(t('downloadCvNote')) + '</p></div>' +
-      '<a class="btn" href="' + Y.CV_PDF + '" target="_blank" rel="noopener">' + I.download + esc(t('downloadCv')) + '</a></div>' +
+      '<div class="cv-actions"><button class="btn btn-primary" type="button" data-action="pdf-cv">' + I.bookOpen + esc(t('readCv')) + '</button>' +
+      '<a class="btn btn-ghost" href="' + Y.CV_PDF + '" download>' + I.download + esc(t('downloadCv')) + '</a></div></div>' +
       '</div></div></div></section>' +
       '<section class="section-tight"><div class="container"><div class="section-head"><div><h2 class="section-title">' + esc(t('milestones')) + '</h2></div></div>' +
       '<div class="timeline">' + timeline + '</div></div></section>' +

@@ -175,7 +175,37 @@
       openDoi: 'فتح DOI', external: 'رابط خارجي', pdfAvailable: 'النص الكامل PDF', noPdf: 'لا يتوفر ملف PDF لهذا العمل.',
       journals: 'دوريات محكّمة', conferences: 'مؤتمرات', studies: 'دراسات', page: 'صفحة',
       allYears: 'كل السنوات', errorTitle: 'الصفحة غير موجودة', errorText: 'قد يكون الرابط قديمًا أو تمت إعادة تسمية الصفحة. يمكنك العودة إلى الرئيسية أو تصفح المكتبة.',
-      seconds: 'ثوانٍ', read: 'قراءة'
+      seconds: 'ثوانٍ', read: 'قراءة',
+      pdfReaderTitle: 'قارئ الكتب والرسائل الرقمية',
+      readerEngine: 'طريقة العرض',
+      modeBuiltin: 'القارئ المدمج (تفاعلي)',
+      modeGoogle: 'عارض Google المستندي',
+      modeNative: 'العرض المباشر',
+      modeChapters: 'فصول الكتاب والمختصر',
+      viewMode: 'نمط العرض',
+      modeContinuous: 'تمرير مستمر',
+      modeFlip: 'صفحة بصفحة',
+      pagePrev: 'السابق',
+      pageNext: 'التالي',
+      pageOf: 'من',
+      pageLabel: 'صفحة',
+      zoomIn: 'تكبير (+)',
+      zoomOut: 'تصغير (-)',
+      zoomFitWidth: 'ملء العرض',
+      zoomFitPage: 'ملء الصفحة',
+      themeDefault: 'عادي',
+      themeNight: 'ليلي',
+      themeSepia: 'دافئ',
+      downloadPdf: 'تحميل PDF',
+      downloadBook: 'تحميل الكتاب',
+      downloadPaper: 'تحميل البحث',
+      readCv: 'قراءة السيرة الذاتية',
+      loadingPdf: 'جارٍ تجهيز ملف القراءة المباشرة…',
+      loadError: 'تعذّر فتح المستند في هذا الوضع، يمكنك تجربة طريقة عرض أخرى أو التنزيل المباشر.',
+      swipeTip: 'اسحب لليمين أو اليسار للتنقل بين الصفحات',
+      googleNotice: 'يتم عرض المستند عبر خوادم Google Docs دون الحاجة للتنزيل على جهازك.',
+      nativeNotice: 'العرض المباشر لمحرك المتصفح. إذا لم يظهر الملف على هاتفك، يُرجى التبديل إلى "القارئ المدمج".',
+      retry: 'إعادة المحاولة'
     },
     en: {
       skip: 'Skip to content',
@@ -222,7 +252,37 @@
       openDoi: 'Open DOI', external: 'External link', pdfAvailable: 'Full text PDF', noPdf: 'No PDF is available for this work.',
       journals: 'Journal articles', conferences: 'Conference papers', studies: 'Studies', page: 'page',
       allYears: 'All years', errorTitle: 'Page not found', errorText: 'The link may be old or the page may have moved. Return home or browse the library.',
-      seconds: 'seconds', read: 'read'
+      seconds: 'seconds', read: 'read',
+      pdfReaderTitle: 'Digital Book & Thesis Reader',
+      readerEngine: 'Reading Method',
+      modeBuiltin: 'Interactive Reader (Built-in)',
+      modeGoogle: 'Google Docs Viewer',
+      modeNative: 'Native Browser View',
+      modeChapters: 'Book Chapters & Summary',
+      viewMode: 'View Mode',
+      modeContinuous: 'Continuous Scroll',
+      modeFlip: 'Page by Page',
+      pagePrev: 'Previous',
+      pageNext: 'Next',
+      pageOf: 'of',
+      pageLabel: 'Page',
+      zoomIn: 'Zoom in (+)',
+      zoomOut: 'Zoom out (-)',
+      zoomFitWidth: 'Fit Width',
+      zoomFitPage: 'Fit Page',
+      themeDefault: 'Default',
+      themeNight: 'Night',
+      themeSepia: 'Sepia',
+      downloadPdf: 'Download PDF',
+      downloadBook: 'Download Book',
+      downloadPaper: 'Download Paper',
+      readCv: 'Read CV',
+      loadingPdf: 'Preparing document for reading…',
+      loadError: 'Failed to load document in this mode. Try another reading method or download directly.',
+      swipeTip: 'Swipe left or right to flip pages',
+      googleNotice: 'Viewing document via Google Docs cloud viewer without downloading to your device.',
+      nativeNotice: 'Direct browser preview. If blank on your mobile device, please switch to the Interactive Reader.',
+      retry: 'Retry'
     }
   };
 
@@ -463,12 +523,19 @@
   }
 
   function bookCard(book) {
-    return '<a class="book-card" href="' + bookUrl(book.id) + '" data-action="open-book" data-id="' + esc(book.id) + '" aria-label="' + esc(titleOf(book)) + '">' +
+    const hasPdf = Boolean(book.pdf);
+    return '<article class="book-card" data-id="' + esc(book.id) + '">' +
+      '<div class="book-card-main" data-action="open-book" data-id="' + esc(book.id) + '" role="button" tabindex="0" aria-label="' + esc(titleOf(book)) + '">' +
       '<div class="cover-wrap">' + bookCover(book) + '</div>' +
       '<div class="book-info"><h3 class="book-title' + textDirectionClass(book) + '">' + esc(titleOf(book)) + '</h3>' +
       '<div class="book-meta"><span>' + esc(book.year) + '</span><span class="dot"></span><span>' + esc(bookTypeLabel(book.typ)) + '</span>' +
       (book.pages ? '<span class="dot"></span><span>' + esc(book.pages) + ' ' + esc(t('pages')) + '</span>' : '') +
-      '</div></div></a>';
+      '</div></div></div>' +
+      '<div class="book-card-actions">' +
+      (hasPdf ? '<button class="card-btn card-btn--primary" type="button" data-action="pdf-book" data-id="' + esc(book.id) + '" aria-label="' + esc(t('readNow')) + '">' + I.bookOpen + '<span>' + esc(t('readNow')) + '</span></button>' : '') +
+      (hasPdf ? '<a class="card-btn card-btn--download" href="' + esc(book.pdf) + '" download aria-label="' + esc(t('downloadPdf')) + '" title="' + esc(t('downloadPdf')) + '">' + I.download + '<span>' + esc(t('downloadPdf')) + '</span></a>' : '') +
+      '<button class="card-btn card-btn--ghost" type="button" data-action="open-book" data-id="' + esc(book.id) + '" aria-label="' + esc(t('details')) + '">' + I.info + '<span>' + esc(t('details')) + '</span></button>' +
+      '</div></article>';
   }
 
   function articleCard(article, featured) {
@@ -490,13 +557,15 @@
   function paperRow(paper, index) {
     const title = titleOf(paper);
     const abs = abstractOf(paper);
+    const hasPdf = Boolean(paper.pdf);
     return '<div class="paper-row">' +
       '<div class="paper-num">' + String(index + 1).padStart(2, '0') + '</div>' +
       '<div class="paper-body"><h3><a href="' + paperUrl(paper.id) + '" data-action="open-paper" data-id="' + esc(paper.id) + '" class="' + (titleIsArabicOnly(paper) ? 'ar-text' : '') + '">' + esc(title) + '</a></h3>' +
       '<div class="paper-venue"><span>' + I.calendar + esc(paper.year) + '</span><span>' + I.bookOpen + esc(venueOf(paper)) + '</span>' + (placeOf(paper) ? '<span>' + I.pin + esc(placeOf(paper)) + '</span>' : '') + '</div>' +
       (abs ? '<p class="paper-abs' + (lang === 'en' && !paper.abs_en ? ' ar-text' : '') + '">' + esc(abs) + '</p>' : '') + '</div>' +
       '<div class="paper-actions">' +
-      (paper.pdf ? '<a class="icon-btn" href="' + esc(paper.pdf) + '" target="_blank" rel="noopener" data-action="pdf-paper" data-id="' + esc(paper.id) + '" aria-label="' + esc(t('readPdf')) + '" title="' + esc(t('readPdf')) + '">' + I.bookOpen + '</a>' : '') +
+      (hasPdf ? '<button class="btn btn-sm btn-light" type="button" data-action="pdf-paper" data-id="' + esc(paper.id) + '" aria-label="' + esc(t('readPdf')) + '">' + I.bookOpen + '<span>' + esc(t('readPdf')) + '</span></button>' : '') +
+      (hasPdf ? '<a class="btn btn-sm btn-ghost btn-download" href="' + esc(paper.pdf) + '" download aria-label="' + esc(t('downloadPdf')) + '" title="' + esc(t('downloadPdf')) + '">' + I.download + '<span>' + esc(t('downloadPdf')) + '</span></a>' : '') +
       '<button class="icon-btn" type="button" data-action="cite-paper" data-id="' + esc(paper.id) + '" aria-label="' + esc(t('cite')) + '" title="' + esc(t('cite')) + '">' + I.quote + '</button>' +
       (paper.doi ? '<a class="icon-btn" href="' + esc(paper.doi) + '" target="_blank" rel="noopener" aria-label="' + esc(t('openDoi')) + '" title="' + esc(t('openDoi')) + '">' + I.link + '</a>' : '') +
       '</div></div>';

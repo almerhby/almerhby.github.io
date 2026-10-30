@@ -207,22 +207,65 @@
     const close = '<button class="modal-close" type="button" data-action="close-dialog" aria-label="' + esc(t('close')) + '">' + I.close + '</button>';
     document.body.insertAdjacentHTML('beforeend',
       '<dialog id="detailDialog" class="detail-dialog"><div class="modal-shell">' + close + '<div id="detailBody"></div></div></dialog>' +
-      '<dialog id="pdfDialog" class="pdf-dialog"><div class="modal-shell">' +
-      '<div class="pdf-head"><div class="pdf-head-info"><h3 id="pdfTitle"></h3><p id="pdfMeta"></p></div>' +
+      '<dialog id="pdfDialog" class="pdf-dialog" aria-labelledby="pdfTitle"><div class="modal-shell pdf-shell">' +
+      '<div class="pdf-head">' +
+      '<div class="pdf-head-info">' +
+      '<div class="pdf-head-top"><span class="pdf-badge">' + esc(t('pdfReaderTitle')) + '</span><span id="pdfMeta" class="pdf-meta"></span></div>' +
+      '<h3 id="pdfTitle"></h3>' +
+      '</div>' +
       '<div class="pdf-actions">' +
-      '<a id="pdfDownload" class="btn btn-primary" href="#" download>' + I.download + '<span>' + esc(t('downloadPdf')) + '</span></a>' +
-      '<a id="pdfOpen" class="btn btn-ghost" href="#" target="_blank" rel="noopener">' + I.external + '<span>' + esc(t('openTab')) + '</span></a>' +
+      '<a id="pdfDownload" class="btn btn-primary btn-download" href="#" download>' + I.download + '<span>' + esc(t('downloadPdf')) + '</span></a>' +
+      '<a id="pdfOpen" class="icon-btn" href="#" target="_blank" rel="noopener" aria-label="' + esc(t('openTab')) + '" title="' + esc(t('openTab')) + '">' + I.external + '</a>' +
       '<button class="icon-btn" type="button" data-action="pdf-fullscreen" aria-label="' + esc(t('fullscreen')) + '" title="' + esc(t('fullscreen')) + '">' + I.maximize + '</button>' +
-      '<button class="icon-btn" type="button" data-action="close-dialog" aria-label="' + esc(t('close')) + '">' + I.close + '</button>' +
-      '</div></div><div class="pdf-frame-wrap"><iframe id="pdfFrame" title="PDF" loading="lazy"></iframe></div></div></dialog>' +
+      '<button class="icon-btn modal-close-btn" type="button" data-action="close-dialog" aria-label="' + esc(t('close')) + '" title="' + esc(t('close')) + '">' + I.close + '</button>' +
+      '</div></div>' +
+      '<nav class="pdf-mode-nav" aria-label="' + esc(t('readerEngine')) + '">' +
+      '<div class="pdf-mode-tabs" role="tablist">' +
+      '<button class="pdf-mode-tab active" type="button" role="tab" data-action="pdf-mode" data-mode="builtin" aria-selected="true"><span class="tab-badge">1</span><span>' + esc(t('modeBuiltin')) + '</span></button>' +
+      '<button class="pdf-mode-tab" type="button" role="tab" data-action="pdf-mode" data-mode="google" aria-selected="false"><span class="tab-badge">2</span><span>' + esc(t('modeGoogle')) + '</span></button>' +
+      '<button class="pdf-mode-tab" type="button" role="tab" data-action="pdf-mode" data-mode="native" aria-selected="false"><span class="tab-badge">3</span><span>' + esc(t('modeNative')) + '</span></button>' +
+      '<button id="pdfChaptersTab" class="pdf-mode-tab" type="button" role="tab" data-action="pdf-mode" data-mode="chapters" aria-selected="false" style="display:none;"><span class="tab-badge">4</span><span>' + esc(t('modeChapters')) + '</span></button>' +
+      '</div></nav>' +
+      '<div class="pdf-views-container">' +
+      '<div id="pdfBuiltinView" class="pdf-view-pane active">' +
+      '<div class="pdf-subtoolbar">' +
+      '<div class="pdf-subgroup">' +
+      '<button class="pdf-pill-btn" type="button" data-action="toggle-scroll-mode" title="' + esc(t('viewMode')) + '"><span id="scrollModeIcon">📖</span><span id="scrollModeLabel">' + esc(t('modeFlip')) + '</span></button>' +
+      '<button class="pdf-pill-btn" type="button" data-action="cycle-theme" title="' + esc(t('themeDefault')) + '"><span id="readerThemeIcon">☀️</span><span id="readerThemeLabel">' + esc(t('themeDefault')) + '</span></button>' +
+      '</div>' +
+      '<div class="pdf-subgroup zoom-group">' +
+      '<button class="pdf-icon-tool" type="button" data-action="pdf-zoom-out" aria-label="' + esc(t('zoomOut')) + '" title="' + esc(t('zoomOut')) + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>' +
+      '<button class="pdf-pill-btn" type="button" data-action="pdf-fit-width" title="' + esc(t('zoomFitWidth')) + '"><span id="zoomPercent">' + esc(t('zoomFitWidth')) + '</span></button>' +
+      '<button class="pdf-icon-tool" type="button" data-action="pdf-zoom-in" aria-label="' + esc(t('zoomIn')) + '" title="' + esc(t('zoomIn')) + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>' +
+      '</div></div>' +
+      '<div id="pdfCanvasContainer" class="pdf-canvas-container" tabindex="0">' +
+      '<div id="pdfLoadingSpinner" class="pdf-spinner-box"><div class="pdf-spinner"></div><p id="pdfLoadingText">' + esc(t('loadingPdf')) + '</p></div>' +
+      '<div id="pdfErrorBox" class="pdf-error-box" style="display:none;"></div>' +
+      '<div id="pdfPagesHost" class="pdf-pages-host"></div>' +
+      '</div>' +
+      '<div id="pdfBottomBar" class="pdf-bottom-bar">' +
+      '<button id="pdfPrevBtn" class="btn btn-sm btn-ghost pdf-page-btn" type="button" data-action="pdf-prev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg><span>' + esc(t('pagePrev')) + '</span></button>' +
+      '<div class="pdf-page-jump"><span class="pdf-page-lbl">' + esc(t('pageLabel')) + '</span><input id="pdfPageInput" type="number" min="1" max="1" value="1" aria-label="' + esc(t('pageLabel')) + '"><span class="pdf-page-of">' + esc(t('pageOf')) + ' <strong id="pdfTotalPages">1</strong></span></div>' +
+      '<button id="pdfNextBtn" class="btn btn-sm btn-ghost pdf-page-btn" type="button" data-action="pdf-next"><span>' + esc(t('pageNext')) + '</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg></button>' +
+      '</div></div>' +
+      '<div id="pdfGoogleView" class="pdf-view-pane">' +
+      '<div class="pdf-notice-bar"><p>' + esc(t('googleNotice')) + '</p><button class="btn btn-sm btn-ghost" type="button" data-action="reload-google">' + esc(t('retry')) + '</button></div>' +
+      '<div class="pdf-frame-wrap"><iframe id="pdfGoogleFrame" title="Google Docs Viewer" loading="lazy"></iframe></div>' +
+      '</div>' +
+      '<div id="pdfNativeView" class="pdf-view-pane">' +
+      '<div class="pdf-notice-bar"><p>' + esc(t('nativeNotice')) + '</p></div>' +
+      '<div class="pdf-frame-wrap"><iframe id="pdfFrame" title="Native PDF Viewer" loading="lazy"></iframe></div>' +
+      '</div>' +
+      '<div id="pdfChaptersView" class="pdf-view-pane">' +
+      '<div id="pdfChaptersContent" class="pdf-chapters-scroll"></div>' +
+      '</div></div></div></dialog>' +
       '<dialog id="citationDialog" class="citation-dialog"><div class="modal-shell">' + close + '<div id="citationBody"></div></div></dialog>' +
       '<div class="toast" id="toast" role="status" aria-live="polite"><div class="toast-inner"></div></div>'
     );
 
     const pdfDialog = document.getElementById('pdfDialog');
     pdfDialog.addEventListener('close', () => {
-      const frame = document.getElementById('pdfFrame');
-      if (frame) frame.src = 'about:blank';
+      cleanupPdfReader();
       syncModalState();
     });
     document.querySelectorAll('dialog').forEach((dialog) => {
@@ -340,32 +383,476 @@
     openDialog(document.getElementById('detailDialog'));
   }
 
-  function openPdf(url, title, meta) {
+  /* ------------------------------------------------------------
+     PDF Reader Engine (Multi-Method & Mobile-Optimized)
+     ------------------------------------------------------------ */
+  let pdfState = {
+    url: '',
+    title: '',
+    meta: '',
+    item: null,
+    mode: 'builtin', // 'builtin' | 'google' | 'native' | 'chapters'
+    doc: null,
+    currentLoadedUrl: '',
+    currentPage: 1,
+    totalPages: 1,
+    scaleMode: 'fit-width',
+    currentScale: 1,
+    scrollMode: 'flip', // 'flip' | 'continuous'
+    theme: 'default', // 'default' | 'night' | 'sepia'
+    touchStartX: 0,
+    touchStartY: 0,
+    touchStartTime: 0,
+    renderTask: null,
+    pdfJsPromise: null
+  };
+
+  function loadPdfJsScript() {
+    if (window.pdfjsLib) {
+      if (!window.pdfjsLib.GlobalWorkerOptions.workerSrc) {
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/js/vendor/pdf.worker.min.js';
+      }
+      return Promise.resolve(window.pdfjsLib);
+    }
+    if (pdfState.pdfJsPromise) return pdfState.pdfJsPromise;
+
+    pdfState.pdfJsPromise = new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'assets/js/vendor/pdf.min.js';
+      script.onload = () => {
+        if (window.pdfjsLib) {
+          window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/js/vendor/pdf.worker.min.js';
+          resolve(window.pdfjsLib);
+        } else {
+          fallbackCdn();
+        }
+      };
+      script.onerror = () => fallbackCdn();
+
+      function fallbackCdn() {
+        const cdnScript = document.createElement('script');
+        cdnScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+        cdnScript.onload = () => {
+          if (window.pdfjsLib) {
+            window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            resolve(window.pdfjsLib);
+          } else {
+            reject(new Error('PDF.js could not be loaded'));
+          }
+        };
+        cdnScript.onerror = () => reject(new Error('Failed to load PDF engine'));
+        document.head.appendChild(cdnScript);
+      }
+
+      document.head.appendChild(script);
+    });
+
+    return pdfState.pdfJsPromise;
+  }
+
+  function openPdf(url, title, meta, item) {
     if (!url) return;
-    document.getElementById('pdfTitle').textContent = title || 'PDF';
-    document.getElementById('pdfMeta').textContent = meta || '';
-    const frame = document.getElementById('pdfFrame');
-    frame.src = url + '#toolbar=1&navpanes=1&view=FitH';
-    const open = document.getElementById('pdfOpen');
-    open.href = url;
+    ensureDialogs();
+    pdfState.url = url;
+    pdfState.title = title || 'PDF';
+    pdfState.meta = meta || '';
+    pdfState.item = item || null;
+
+    document.getElementById('pdfTitle').textContent = pdfState.title;
+    document.getElementById('pdfMeta').textContent = pdfState.meta;
+
     const download = document.getElementById('pdfDownload');
     download.href = url;
-    download.setAttribute('download', url.split('/').pop() || 'document.pdf');
+    const filename = url.split('/').pop() || 'document.pdf';
+    download.setAttribute('download', filename);
+
+    const open = document.getElementById('pdfOpen');
+    open.href = url;
+
+    // Check if chapters tab should be available
+    const chaptersTab = document.getElementById('pdfChaptersTab');
+    if (item && Array.isArray(item.chapters) && item.chapters.length > 0) {
+      chaptersTab.style.display = '';
+    } else {
+      chaptersTab.style.display = 'none';
+      if (pdfState.mode === 'chapters') pdfState.mode = 'builtin';
+    }
+
     openDialog(document.getElementById('pdfDialog'));
+    switchPdfMode(pdfState.mode || 'builtin');
+    initPdfTouchEvents();
+  }
+
+  function switchPdfMode(mode) {
+    pdfState.mode = mode;
+    document.querySelectorAll('.pdf-mode-tab').forEach((tab) => {
+      const isActive = tab.dataset.mode === mode;
+      tab.classList.toggle('active', isActive);
+      tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    });
+
+    // Toggle panes
+    document.getElementById('pdfBuiltinView').classList.toggle('active', mode === 'builtin');
+    document.getElementById('pdfGoogleView').classList.toggle('active', mode === 'google');
+    document.getElementById('pdfNativeView').classList.toggle('active', mode === 'native');
+    document.getElementById('pdfChaptersView').classList.toggle('active', mode === 'chapters');
+
+    if (mode === 'builtin') {
+      if (!pdfState.doc || pdfState.currentLoadedUrl !== pdfState.url) {
+        loadBuiltinPdf();
+      } else {
+        renderCurrentPage();
+      }
+    } else if (mode === 'google') {
+      loadGoogleViewer();
+    } else if (mode === 'native') {
+      loadNativeViewer();
+    } else if (mode === 'chapters') {
+      renderChaptersView();
+    }
+  }
+
+  function loadGoogleViewer() {
+    const frame = document.getElementById('pdfGoogleFrame');
+    // Ensure URL is absolute for Google's servers
+    let absUrl = pdfState.url;
+    if (!/^https?:\/\//i.test(absUrl)) {
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:') {
+        absUrl = 'https://almerhby.github.io/' + absUrl.replace(/^\.\//, '');
+      } else {
+        absUrl = new URL(absUrl, window.location.href).href;
+      }
+    }
+    frame.src = 'https://docs.google.com/viewer?url=' + encodeURIComponent(absUrl) + '&embedded=true';
+  }
+
+  function reloadGoogleViewer() {
+    loadGoogleViewer();
+  }
+
+  function loadNativeViewer() {
+    const frame = document.getElementById('pdfFrame');
+    frame.src = encodeURI(pdfState.url) + '#toolbar=1&navpanes=1&view=FitH';
+  }
+
+  function loadBuiltinPdf() {
+    const spinner = document.getElementById('pdfLoadingSpinner');
+    const errorBox = document.getElementById('pdfErrorBox');
+    const host = document.getElementById('pdfPagesHost');
+    spinner.style.display = 'flex';
+    errorBox.style.display = 'none';
+    host.innerHTML = '';
+
+    loadPdfJsScript().then((pdfjs) => {
+      return pdfjs.getDocument({
+        url: encodeURI(pdfState.url),
+        cMapPacked: true
+      }).promise;
+    }).then((doc) => {
+      pdfState.doc = doc;
+      pdfState.currentLoadedUrl = pdfState.url;
+      pdfState.totalPages = doc.numPages;
+      pdfState.currentPage = 1;
+      spinner.style.display = 'none';
+      document.getElementById('pdfTotalPages').textContent = String(doc.numPages);
+      const pageInput = document.getElementById('pdfPageInput');
+      pageInput.max = String(doc.numPages);
+      pageInput.value = '1';
+      renderCurrentPage();
+    }).catch((err) => {
+      spinner.style.display = 'none';
+      errorBox.style.display = 'block';
+      errorBox.innerHTML =
+        '<p>' + esc(t('loadError')) + '</p>' +
+        '<div class="pdf-error-actions">' +
+        '<button class="btn btn-primary" type="button" data-action="pdf-mode" data-mode="google">' + esc(t('modeGoogle')) + '</button>' +
+        '<button class="btn btn-ghost" type="button" data-action="pdf-mode" data-mode="native">' + esc(t('modeNative')) + '</button>' +
+        '<a class="btn btn-ghost" href="' + esc(pdfState.url) + '" download>' + I.download + esc(t('downloadPdf')) + '</a>' +
+        '</div>';
+      console.warn('PDF.js loading note:', err);
+    });
+  }
+
+  function renderCurrentPage() {
+    if (!pdfState.doc) return;
+    if (pdfState.scrollMode === 'continuous') {
+      renderContinuousPages();
+      return;
+    }
+    renderSinglePage(pdfState.currentPage);
+  }
+
+  function renderSinglePage(pageNum) {
+    if (!pdfState.doc) return;
+    pageNum = Math.max(1, Math.min(pageNum, pdfState.totalPages));
+    pdfState.currentPage = pageNum;
+
+    // Update UI controls
+    const pageInput = document.getElementById('pdfPageInput');
+    if (pageInput) pageInput.value = String(pageNum);
+    const prevBtn = document.getElementById('pdfPrevBtn');
+    if (prevBtn) prevBtn.disabled = pageNum <= 1;
+    const nextBtn = document.getElementById('pdfNextBtn');
+    if (nextBtn) nextBtn.disabled = pageNum >= pdfState.totalPages;
+
+    if (pdfState.renderTask) {
+      try { pdfState.renderTask.cancel(); } catch (e) { /* ignore */ }
+      pdfState.renderTask = null;
+    }
+
+    pdfState.doc.getPage(pageNum).then((page) => {
+      const container = document.getElementById('pdfCanvasContainer');
+      const host = document.getElementById('pdfPagesHost');
+      const containerWidth = Math.max(280, container.clientWidth - 28);
+      const unscaledViewport = page.getViewport({ scale: 1 });
+
+      let scale;
+      if (pdfState.scaleMode === 'fit-width') {
+        scale = containerWidth / unscaledViewport.width;
+        pdfState.currentScale = scale;
+        const zp = document.getElementById('zoomPercent');
+        if (zp) zp.textContent = esc(t('zoomFitWidth'));
+      } else {
+        scale = pdfState.currentScale;
+        const zp = document.getElementById('zoomPercent');
+        if (zp) zp.textContent = Math.round(scale * 100) + '%';
+      }
+
+      const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+      const viewport = page.getViewport({ scale: scale * dpr });
+
+      let canvas = host.querySelector('#pdfSingleCanvas');
+      if (!canvas) {
+        host.innerHTML = '';
+        canvas = document.createElement('canvas');
+        canvas.id = 'pdfSingleCanvas';
+        canvas.className = 'pdf-page-canvas';
+        host.appendChild(canvas);
+      }
+
+      canvas.width = Math.floor(viewport.width);
+      canvas.height = Math.floor(viewport.height);
+      canvas.style.width = Math.floor(viewport.width / dpr) + 'px';
+      canvas.style.height = Math.floor(viewport.height / dpr) + 'px';
+
+      const ctx = canvas.getContext('2d', { alpha: false });
+      pdfState.renderTask = page.render({ canvasContext: ctx, viewport });
+      pdfState.renderTask.promise.then(() => {
+        pdfState.renderTask = null;
+        container.scrollTop = 0;
+      }).catch((err) => {
+        if (err && err.name === 'RenderingCancelledException') return;
+        console.error('Render error', err);
+      });
+    });
+  }
+
+  function renderContinuousPages() {
+    if (!pdfState.doc) return;
+    const host = document.getElementById('pdfPagesHost');
+    host.innerHTML = '';
+    const container = document.getElementById('pdfCanvasContainer');
+    const containerWidth = Math.max(280, container.clientWidth - 28);
+    const count = Math.min(pdfState.totalPages, 20);
+
+    for (let i = 1; i <= count; i++) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'pdf-continuous-page';
+      wrapper.dataset.page = String(i);
+      const canvas = document.createElement('canvas');
+      canvas.className = 'pdf-page-canvas';
+      wrapper.appendChild(canvas);
+      host.appendChild(wrapper);
+
+      ((pageNum, c) => {
+        pdfState.doc.getPage(pageNum).then((page) => {
+          const unscaled = page.getViewport({ scale: 1 });
+          const scale = pdfState.scaleMode === 'fit-width' ? (containerWidth / unscaled.width) : pdfState.currentScale;
+          const dpr = Math.min(window.devicePixelRatio || 1, 2);
+          const vp = page.getViewport({ scale: scale * dpr });
+          c.width = Math.floor(vp.width);
+          c.height = Math.floor(vp.height);
+          c.style.width = Math.floor(vp.width / dpr) + 'px';
+          c.style.height = Math.floor(vp.height / dpr) + 'px';
+          const ctx = c.getContext('2d', { alpha: false });
+          page.render({ canvasContext: ctx, viewport: vp });
+        });
+      })(i, canvas);
+    }
+  }
+
+  function changePdfPage(delta) {
+    if (!pdfState.doc) return;
+    renderSinglePage(pdfState.currentPage + delta);
+  }
+
+  function setPdfPage(num) {
+    if (!pdfState.doc || isNaN(num)) return;
+    renderSinglePage(num);
+  }
+
+  function zoomPdf(action) {
+    if (action === 'fit-width') {
+      pdfState.scaleMode = 'fit-width';
+    } else if (typeof action === 'number') {
+      pdfState.scaleMode = 'manual';
+      pdfState.currentScale = Math.max(0.4, Math.min(3.5, (pdfState.currentScale || 1) + action));
+    }
+    renderCurrentPage();
+  }
+
+  function toggleScrollMode() {
+    pdfState.scrollMode = pdfState.scrollMode === 'flip' ? 'continuous' : 'flip';
+    const isFlip = pdfState.scrollMode === 'flip';
+    document.getElementById('scrollModeLabel').textContent = esc(t(isFlip ? 'modeFlip' : 'modeContinuous'));
+    document.getElementById('scrollModeIcon').textContent = isFlip ? '📖' : '📜';
+    const bottomBar = document.getElementById('pdfBottomBar');
+    if (bottomBar) bottomBar.style.display = isFlip ? 'flex' : 'none';
+    renderCurrentPage();
+  }
+
+  function cycleReaderTheme() {
+    const container = document.getElementById('pdfCanvasContainer');
+    if (pdfState.theme === 'default') {
+      pdfState.theme = 'night';
+      container.classList.remove('theme-sepia');
+      container.classList.add('theme-night');
+      document.getElementById('readerThemeIcon').textContent = '🌙';
+      document.getElementById('readerThemeLabel').textContent = esc(t('themeNight'));
+    } else if (pdfState.theme === 'night') {
+      pdfState.theme = 'sepia';
+      container.classList.remove('theme-night');
+      container.classList.add('theme-sepia');
+      document.getElementById('readerThemeIcon').textContent = '📜';
+      document.getElementById('readerThemeLabel').textContent = esc(t('themeSepia'));
+    } else {
+      pdfState.theme = 'default';
+      container.classList.remove('theme-night', 'theme-sepia');
+      document.getElementById('readerThemeIcon').textContent = '☀️';
+      document.getElementById('readerThemeLabel').textContent = esc(t('themeDefault'));
+    }
+  }
+
+  function renderChaptersView() {
+    const content = document.getElementById('pdfChaptersContent');
+    if (!pdfState.item) {
+      content.innerHTML = '<p class="muted center" style="padding:40px">' + esc(t('noResultsText')) + '</p>';
+      return;
+    }
+    const book = pdfState.item;
+    const chapters = Array.isArray(book.chapters) ? book.chapters : [];
+    content.innerHTML =
+      '<div class="pdf-book-brief">' +
+      '<div class="brief-head">' +
+      '<h3>' + esc(titleOf(book)) + '</h3>' +
+      (subOf(book) ? '<p class="brief-sub">' + esc(subOf(book)) + '</p>' : '') +
+      '</div>' +
+      '<div class="brief-summary"><h4>' + esc(t('summary')) + '</h4><p>' + esc(summaryOf(book)) + '</p></div>' +
+      '<div class="brief-chapters"><h4>' + esc(t('contents')) + ' (' + chapters.length + ')</h4>' +
+      chapters.map((ch, idx) =>
+        '<details class="pdf-ch-item"' + (idx === 0 ? ' open' : '') + '>' +
+        '<summary><span class="ch-num">' + (idx + 1) + '</span><span class="ch-title">' + esc(ch.title_ar || ch.title_en || (t('part') + ' ' + (idx + 1))) + '</span></summary>' +
+        '<div class="ch-text">' + esc(ch.text_ar || ch.text_en || '').replace(/\n/g, '<br>') + '</div>' +
+        '</details>'
+      ).join('') +
+      '</div></div>';
+  }
+
+  function initPdfTouchEvents() {
+    const container = document.getElementById('pdfCanvasContainer');
+    if (!container || container.dataset.touchBound) return;
+    container.dataset.touchBound = 'true';
+
+    container.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 1) {
+        pdfState.touchStartX = e.touches[0].clientX;
+        pdfState.touchStartY = e.touches[0].clientY;
+        pdfState.touchStartTime = Date.now();
+      }
+    }, { passive: true });
+
+    container.addEventListener('touchend', (e) => {
+      if (pdfState.scrollMode !== 'flip') return;
+      if (!e.changedTouches || e.changedTouches.length === 0) return;
+      const dx = e.changedTouches[0].clientX - pdfState.touchStartX;
+      const dy = e.changedTouches[0].clientY - pdfState.touchStartY;
+      const dt = Date.now() - pdfState.touchStartTime;
+      if (dt < 600 && Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.4) {
+        if (dx < 0) {
+          changePdfPage(1); // Swipe left -> Next page
+        } else {
+          changePdfPage(-1); // Swipe right -> Previous page
+        }
+      }
+    }, { passive: true });
+
+    const pageInput = document.getElementById('pdfPageInput');
+    if (pageInput) {
+      pageInput.addEventListener('change', (e) => {
+        setPdfPage(parseInt(e.target.value, 10));
+      });
+      pageInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          setPdfPage(parseInt(e.target.value, 10));
+          pageInput.blur();
+        }
+      });
+    }
+
+    // Keyboard navigation when dialog is open
+    window.addEventListener('keydown', (e) => {
+      const dialog = document.getElementById('pdfDialog');
+      if (!dialog || !dialog.open) return;
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        changePdfPage(ar() ? -1 : 1);
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        changePdfPage(ar() ? 1 : -1);
+      }
+    });
+
+    window.addEventListener('resize', () => {
+      const dialog = document.getElementById('pdfDialog');
+      if (dialog && dialog.open && pdfState.mode === 'builtin' && pdfState.scaleMode === 'fit-width') {
+        renderCurrentPage();
+      }
+    }, { passive: true });
+  }
+
+  function cleanupPdfReader() {
+    if (pdfState.renderTask) {
+      try { pdfState.renderTask.cancel(); } catch (e) { /* ignore */ }
+      pdfState.renderTask = null;
+    }
+    const frame = document.getElementById('pdfFrame');
+    if (frame) frame.src = 'about:blank';
+    const googleFrame = document.getElementById('pdfGoogleFrame');
+    if (googleFrame) googleFrame.src = 'about:blank';
+    const host = document.getElementById('pdfPagesHost');
+    if (host) host.innerHTML = '';
+    const shell = document.querySelector('.pdf-shell');
+    if (shell) shell.classList.remove('is-fullscreen');
   }
 
   function openBookPdf(id) {
     const book = Y.BOOKS.find((item) => item.id === id);
     if (!book || !book.pdf) return;
     const meta = [book.year, bookTypeLabel(book.typ), book.pages ? book.pages + ' ' + t('pages') : '', publisherOf(book)].filter(Boolean).join(' · ');
-    openPdf(book.pdf, titleOf(book), meta);
+    openPdf(book.pdf, titleOf(book), meta, book);
   }
 
   function openPaperPdf(id) {
     const paper = Y.PAPERS.find((item) => item.id === id);
     if (!paper || !paper.pdf) return;
     const meta = [paper.year, paperTypeLabel(paper.typ), venueOf(paper)].filter(Boolean).join(' · ');
-    openPdf(paper.pdf, titleOf(paper), meta);
+    openPdf(paper.pdf, titleOf(paper), meta, paper);
+  }
+
+  function openCvPdf() {
+    const title = ar() ? 'السيرة الذاتية — د. يحيى أحمد المرهبي' : 'Academic CV — Dr. Yahya Al-Marhabi';
+    const meta = ar() ? 'نسخة 2025 · عربية وإنجليزية' : '2025 Edition · Arabic & English';
+    openPdf(Y.CV_PDF, title, meta, null);
   }
 
   function togglePdfFullscreen() {
@@ -374,8 +861,13 @@
     if (!shell) return;
     if (document.fullscreenElement) {
       document.exitFullscreen().catch(() => {});
+      shell.classList.remove('is-fullscreen');
     } else if (shell.requestFullscreen) {
-      shell.requestFullscreen().catch(() => {});
+      shell.requestFullscreen().catch(() => {
+        shell.classList.toggle('is-fullscreen');
+      });
+    } else {
+      shell.classList.toggle('is-fullscreen');
     }
   }
 
@@ -645,6 +1137,46 @@
       case 'pdf-paper':
         event.preventDefault();
         openPaperPdf(el.dataset.id);
+        break;
+      case 'pdf-cv':
+        event.preventDefault();
+        openCvPdf();
+        break;
+      case 'pdf-mode':
+        event.preventDefault();
+        switchPdfMode(el.dataset.mode);
+        break;
+      case 'pdf-prev':
+        event.preventDefault();
+        changePdfPage(-1);
+        break;
+      case 'pdf-next':
+        event.preventDefault();
+        changePdfPage(1);
+        break;
+      case 'pdf-zoom-in':
+        event.preventDefault();
+        zoomPdf(0.25);
+        break;
+      case 'pdf-zoom-out':
+        event.preventDefault();
+        zoomPdf(-0.25);
+        break;
+      case 'pdf-fit-width':
+        event.preventDefault();
+        zoomPdf('fit-width');
+        break;
+      case 'toggle-scroll-mode':
+        event.preventDefault();
+        toggleScrollMode();
+        break;
+      case 'cycle-theme':
+        event.preventDefault();
+        cycleReaderTheme();
+        break;
+      case 'reload-google':
+        event.preventDefault();
+        reloadGoogleViewer();
         break;
       case 'pdf-fullscreen':
         event.preventDefault();
