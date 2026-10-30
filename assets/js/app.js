@@ -205,7 +205,14 @@
       swipeTip: 'اسحب لليمين أو اليسار للتنقل بين الصفحات',
       googleNotice: 'يتم عرض المستند عبر خوادم Google Docs دون الحاجة للتنزيل على جهازك.',
       nativeNotice: 'العرض المباشر لمحرك المتصفح. إذا لم يظهر الملف على هاتفك، يُرجى التبديل إلى "القارئ المدمج".',
-      retry: 'إعادة المحاولة'
+      retry: 'إعادة المحاولة',
+      modeFlipbook: 'تقليب الصفحات (كتاب حقيقي)',
+      flipbookSound: 'صوت تقليب الصفحات',
+      soundOn: 'صوت التقليب: مفعّل',
+      soundOff: 'صوت التقليب: صامت',
+      flipPrev: 'الصفحة السابقة',
+      flipNext: 'الصفحة التالية',
+      realisticBook: 'عرض الكتاب الواقعي 3D'
     },
     en: {
       skip: 'Skip to content',
@@ -282,7 +289,14 @@
       swipeTip: 'Swipe left or right to flip pages',
       googleNotice: 'Viewing document via Google Docs cloud viewer without downloading to your device.',
       nativeNotice: 'Direct browser preview. If blank on your mobile device, please switch to the Interactive Reader.',
-      retry: 'Retry'
+      retry: 'Retry',
+      modeFlipbook: 'Realistic Page-Flip Book',
+      flipbookSound: 'Page-turn sound',
+      soundOn: 'Page sound: On',
+      soundOff: 'Page sound: Muted',
+      flipPrev: 'Previous page',
+      flipNext: 'Next page',
+      realisticBook: 'Realistic 3D Book'
     }
   };
 
@@ -331,6 +345,8 @@
     pin: svg('<path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0z"/><circle cx="12" cy="10" r="2.5"/>'),
     info: svg('<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>'),
     sparkle: svg('<path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/>'),
+    volume: svg('<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>'),
+    volumeMute: svg('<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>'),
     maximize: svg('<path d="M8 3H3v5M16 3h5v5M8 21H3v-5M21 16v5h-5"/>'),
     star: svg('<path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 9.4l6.1-.9z"/>'),
     pen: svg('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4z"/>'),
