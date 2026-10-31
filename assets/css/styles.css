@@ -615,6 +615,7 @@ html[lang="ar"] .modal-section h3{letter-spacing:0;font-size:14px}
   border-radius:4px;
   background:#fff;
   max-width:100%;
+  direction:ltr !important;
   transition:filter .25s,box-shadow .25s;
 }
 .pdf-continuous-page{margin-bottom:16px;display:flex;justify-content:center}
@@ -833,6 +834,7 @@ html[lang="ar"] .modal-section h3{letter-spacing:0;font-size:14px}
   height:auto;
   border-radius:2px;
   box-shadow:0 2px 8px rgba(0,0,0,.06);
+  direction:ltr !important;
 }
 .flip-page-number{
   font-size:11px;
