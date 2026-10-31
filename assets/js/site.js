@@ -272,7 +272,7 @@
       '<div class="flipbook-spine"></div>' +
       '<div class="flipbook-page-wrapper page-left" data-action="flip-click-left" title="' + esc(t('flipPrev')) + '">' +
       '<div class="flipbook-page-inner">' +
-      '<canvas id="flipCanvasLeft" class="flip-canvas"></canvas>' +
+      '<canvas id="flipCanvasLeft" class="flip-canvas" dir="ltr" style="direction:ltr;"></canvas>' +
       '<div id="flipPageNumLeft" class="flip-page-number"></div>' +
       '</div>' +
       '<div class="flip-edge-shadow left-edge"></div>' +
@@ -282,7 +282,7 @@
       '</div>' +
       '<div class="flipbook-page-wrapper page-right" data-action="flip-click-right" title="' + esc(t('flipNext')) + '">' +
       '<div class="flipbook-page-inner">' +
-      '<canvas id="flipCanvasRight" class="flip-canvas"></canvas>' +
+      '<canvas id="flipCanvasRight" class="flip-canvas" dir="ltr" style="direction:ltr;"></canvas>' +
       '<div id="flipPageNumRight" class="flip-page-number"></div>' +
       '</div>' +
       '<div class="flip-edge-shadow right-edge"></div>' +
@@ -713,9 +713,7 @@
           cMapUrl: useCdnFallback ? 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/' : cMapUrl,
           cMapPacked: true,
           standardFontDataUrl: useCdnFallback ? 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/standard_fonts/' : standardFontDataUrl,
-          enableXfa: true,
-          useSystemFonts: false,
-          isEvalSupported: false
+          enableXfa: true
         }).promise;
       });
     };
@@ -797,26 +795,31 @@
       pdfState.renderTask = null;
     }
 
-    pdfState.doc.getPage(pageNum).then((page) => {
+    const currentDoc = pdfState.doc;
+    currentDoc.getPage(pageNum).then(async (page) => {
+      if (pdfState.doc !== currentDoc) return;
       const container = document.getElementById('pdfCanvasContainer');
       const host = document.getElementById('pdfPagesHost');
       const containerWidth = Math.max(280, container.clientWidth - 28);
       const unscaledViewport = page.getViewport({ scale: 1 });
 
-      let scale;
+      let cssScale;
       if (pdfState.scaleMode === 'fit-width') {
-        scale = containerWidth / unscaledViewport.width;
-        pdfState.currentScale = scale;
+        cssScale = containerWidth / unscaledViewport.width;
+        pdfState.currentScale = cssScale;
         const zp = document.getElementById('zoomPercent');
         if (zp) zp.textContent = esc(t('zoomFitWidth'));
       } else {
-        scale = pdfState.currentScale;
+        cssScale = pdfState.currentScale;
         const zp = document.getElementById('zoomPercent');
-        if (zp) zp.textContent = Math.round(scale * 100) + '%';
+        if (zp) zp.textContent = Math.round(cssScale * 100) + '%';
       }
 
-      const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
-      const viewport = page.getViewport({ scale: scale * dpr });
+      // High-resolution rasterization multiplier (minimum scale 2.2) eliminates
+      // subpixel glyph rounding gaps in Arabic ligatures and kashidas
+      const dpr = window.devicePixelRatio || 1;
+      const renderScale = Math.max(2.2, cssScale * Math.max(2.5, dpr * 2.0));
+      const viewport = page.getViewport({ scale: renderScale });
 
       let canvas = host.querySelector('#pdfSingleCanvas');
       if (!canvas) {
@@ -829,17 +832,39 @@
 
       canvas.width = Math.floor(viewport.width);
       canvas.height = Math.floor(viewport.height);
-      canvas.style.width = Math.floor(viewport.width / dpr) + 'px';
-      canvas.style.height = Math.floor(viewport.height / dpr) + 'px';
+      canvas.style.width = Math.floor(unscaledViewport.width * cssScale) + 'px';
+      canvas.style.height = Math.floor(unscaledViewport.height * cssScale) + 'px';
+
+      canvas.dir = 'ltr';
+      canvas.style.direction = 'ltr';
 
       const ctx = canvas.getContext('2d', { alpha: false });
-      pdfState.renderTask = page.render({ canvasContext: ctx, viewport });
-      pdfState.renderTask.promise.then(() => {
-        pdfState.renderTask = null;
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.direction = 'ltr';
+
+      // Ensure page fonts are parsed and ready before painting
+      try {
+        await page.getOperatorList();
+        if (document.fonts && document.fonts.ready) {
+          await document.fonts.ready;
+        }
+      } catch (e) {}
+
+      if (pdfState.doc !== currentDoc || pdfState.currentPage !== pageNum) return;
+
+      if (pdfState.renderTask) {
+        try { pdfState.renderTask.cancel(); } catch (e) {}
+      }
+
+      const task = page.render({ canvasContext: ctx, viewport });
+      pdfState.renderTask = task;
+      task.promise.then(() => {
+        if (pdfState.renderTask === task) pdfState.renderTask = null;
         container.scrollTop = 0;
       }).catch((err) => {
         if (err && err.name === 'RenderingCancelledException') return;
-        console.error('Render error', err);
+        console.warn('Render note:', err);
       });
     });
   }
@@ -852,6 +877,7 @@
     const containerWidth = Math.max(280, container.clientWidth - 28);
     const count = Math.min(pdfState.totalPages, 20);
 
+    const currentDoc = pdfState.doc;
     for (let i = 1; i <= count; i++) {
       const wrapper = document.createElement('div');
       wrapper.className = 'pdf-continuous-page';
@@ -862,17 +888,43 @@
       host.appendChild(wrapper);
 
       ((pageNum, c) => {
-        pdfState.doc.getPage(pageNum).then((page) => {
+        currentDoc.getPage(pageNum).then(async (page) => {
+          if (pdfState.doc !== currentDoc) return;
           const unscaled = page.getViewport({ scale: 1 });
-          const scale = pdfState.scaleMode === 'fit-width' ? (containerWidth / unscaled.width) : pdfState.currentScale;
-          const dpr = Math.min(window.devicePixelRatio || 1, 2);
-          const vp = page.getViewport({ scale: scale * dpr });
+          const cssScale = pdfState.scaleMode === 'fit-width' ? (containerWidth / unscaled.width) : pdfState.currentScale;
+          const dpr = window.devicePixelRatio || 1;
+          const renderScale = Math.max(2.2, cssScale * Math.max(2.5, dpr * 2.0));
+          const vp = page.getViewport({ scale: renderScale });
+
           c.width = Math.floor(vp.width);
           c.height = Math.floor(vp.height);
-          c.style.width = Math.floor(vp.width / dpr) + 'px';
-          c.style.height = Math.floor(vp.height / dpr) + 'px';
+          c.style.width = Math.floor(unscaled.width * cssScale) + 'px';
+          c.style.height = Math.floor(unscaled.height * cssScale) + 'px';
+
+          c.dir = 'ltr';
+          c.style.direction = 'ltr';
+
           const ctx = c.getContext('2d', { alpha: false });
-          page.render({ canvasContext: ctx, viewport: vp });
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.direction = 'ltr';
+
+          try {
+            await page.getOperatorList();
+            if (document.fonts && document.fonts.ready) {
+              await document.fonts.ready;
+            }
+          } catch (e) {}
+
+          const task = page.render({ canvasContext: ctx, viewport: vp });
+          c._renderTask = task;
+          task.promise.then(() => {
+            if (c._renderTask === task) c._renderTask = null;
+          }).catch((err) => {
+            if (err && err.name === 'RenderingCancelledException') return;
+          });
+        }).catch((err) => {
+          console.warn('Continuous page note:', err);
         });
       })(i, canvas);
     }
@@ -1038,23 +1090,65 @@
 
   function renderFlipPageToCanvas(pageNum, canvas, maxWidth, maxHeight) {
     if (!pdfState.doc || !canvas || pageNum < 1 || pageNum > pdfState.totalPages) return;
-    pdfState.doc.getPage(pageNum).then((page) => {
+    
+    // Cancel any ongoing render task on this canvas
+    if (canvas._renderTask) {
+      try { canvas._renderTask.cancel(); } catch (e) { /* ignore */ }
+      canvas._renderTask = null;
+    }
+    canvas._targetPage = pageNum;
+
+    const currentDoc = pdfState.doc;
+    currentDoc.getPage(pageNum).then(async (page) => {
+      if (pdfState.doc !== currentDoc || canvas._targetPage !== pageNum) return;
       const unscaled = page.getViewport({ scale: 1 });
       const scaleW = maxWidth / unscaled.width;
       const scaleH = maxHeight / unscaled.height;
-      const scale = Math.min(scaleW, scaleH);
-      const dpr = Math.min(window.devicePixelRatio || 1, 2.2);
-      const vp = page.getViewport({ scale: scale * dpr });
+      const cssScale = Math.min(scaleW, scaleH);
+
+      // High-resolution internal rasterization (minimum scale 2.2) ensures
+      // that Arabic ligatures, kashidas (tatweel), and cursive joining strokes
+      // render with full subpixel accuracy without 1-pixel rounding breaks.
+      const dpr = window.devicePixelRatio || 1;
+      const renderScale = Math.max(2.2, cssScale * Math.max(2.5, dpr * 2.0));
+      const vp = page.getViewport({ scale: renderScale });
 
       canvas.width = Math.floor(vp.width);
       canvas.height = Math.floor(vp.height);
-      canvas.style.width = Math.floor(vp.width / dpr) + 'px';
-      canvas.style.height = Math.floor(vp.height / dpr) + 'px';
+      canvas.style.width = Math.floor(unscaled.width * cssScale) + 'px';
+      canvas.style.height = Math.floor(unscaled.height * cssScale) + 'px';
+
+      canvas.dir = 'ltr';
+      canvas.style.direction = 'ltr';
 
       const ctx = canvas.getContext('2d', { alpha: false });
-      page.render({ canvasContext: ctx, viewport: vp });
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.direction = 'ltr';
+
+      // Ensure page fonts are parsed and ready before painting
+      try {
+        await page.getOperatorList();
+        if (document.fonts && document.fonts.ready) {
+          await document.fonts.ready;
+        }
+      } catch (e) {}
+
+      if (pdfState.doc !== currentDoc || canvas._targetPage !== pageNum) return;
+
+      if (canvas._renderTask) {
+        try { canvas._renderTask.cancel(); } catch (e) {}
+      }
+
+      const task = page.render({ canvasContext: ctx, viewport: vp });
+      canvas._renderTask = task;
+      await task.promise;
+      if (canvas._renderTask === task) {
+        canvas._renderTask = null;
+      }
     }).catch((err) => {
-      console.warn('Flip page render error', err);
+      if (err && err.name === 'RenderingCancelledException') return;
+      console.warn('Flip page render note:', err);
     });
   }
 
@@ -1268,6 +1362,16 @@
     if (pdfState.renderTask) {
       try { pdfState.renderTask.cancel(); } catch (e) { /* ignore */ }
       pdfState.renderTask = null;
+    }
+    const canvasR = document.getElementById('flipCanvasRight');
+    if (canvasR && canvasR._renderTask) {
+      try { canvasR._renderTask.cancel(); } catch (e) {}
+      canvasR._renderTask = null;
+    }
+    const canvasL = document.getElementById('flipCanvasLeft');
+    if (canvasL && canvasL._renderTask) {
+      try { canvasL._renderTask.cancel(); } catch (e) {}
+      canvasL._renderTask = null;
     }
     const frame = document.getElementById('pdfFrame');
     if (frame) frame.src = 'about:blank';
