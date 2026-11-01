@@ -19,7 +19,7 @@
   const PAGE = document.body ? document.body.dataset.page || '' : '';
   const SITE_URL = 'https://almerhby.github.io/';
   const PORTRAIT = 'assets/images/portrait-photo.jpg';
-  const CV_PDF = 'assets/pdfs/السيرة الذاتية - د. يحيى أحمد المرهبي 2025.pdf';
+  const CV_PDF = 'assets/pdfs/السيرة الذاتية - د. يحيى أحمد المرهبي 2026.pdf';
   const PAGE_NAMES = ['index', 'about', 'books', 'research', 'articles'];
 
   let lang = readPref('yahya-lang', 'ar');

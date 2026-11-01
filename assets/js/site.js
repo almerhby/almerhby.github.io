@@ -94,6 +94,8 @@
       '<li><a href="' + esc(P.hekmah) + '" target="_blank" rel="noopener"><span class="t-ar">حكمة يمانية</span><span class="t-en">Hekmah Yamaniya</span></a></li>' +
       '<li><a href="' + Y.CV_PDF + '" target="_blank" rel="noopener"><span class="t-ar">السيرة الذاتية PDF</span><span class="t-en">CV (PDF)</span></a></li>' +
       '</ul></div></div>' +
+      '<div class="footer-counter"><span class="counter-pill" title="' + (Y.lang === 'ar' ? 'إجمالي زيارات الموقع' : 'Total site visits') + '">' +
+      I.user + '<span class="t-ar">زوار الموقع:</span><span class="t-en">Site Visitors:</span> <strong id="siteVisitorCount" data-counter="visitors">—</strong></span></div>' +
       '<div class="footer-bottom"><span>© ' + Y.currentYear() + ' ' + esc(P.name_ar || '') + ' — <span class="t-ar">' + esc(Y.COPY.ar.allRights) + '</span><span class="t-en">' + esc(Y.COPY.en.allRights) + '</span></span>' +
       '<span><span class="t-ar">موقع أكاديمي ومكتبة رقمية</span><span class="t-en">Academic portfolio & digital library</span></span></div>' +
       '</div></footer>';
@@ -394,13 +396,16 @@
       '<div class="modal-meta"><span class="chip">' + esc(book.year) + '</span>' +
       (book.pages ? '<span class="chip">' + esc(book.pages) + ' ' + esc(t('pages')) + '</span>' : '') +
       '<span class="chip">' + esc(collectionLabel(book.cat)) + '</span>' +
-      '<span class="chip">' + esc(publisherOf(book)) + '</span></div>' +
+      '<span class="chip">' + esc(publisherOf(book)) + '</span>' +
+      '<span class="chip chip--counter" title="' + (Y.lang === 'ar' ? 'عدد القراءات' : 'Total reads') + '">' + I.eye + '<strong id="bookReadCount">' + ((window.YAHYA_COUNTER && window.YAHYA_COUNTER.getBookStats(book.id).reads) || 0).toLocaleString('en-US') + '</strong> <span class="t-ar">قراءة</span><span class="t-en">reads</span></span>' +
+      (book.pdf ? '<span class="chip chip--counter" title="' + (Y.lang === 'ar' ? 'عدد مرات التحميل' : 'Total downloads') + '">' + I.download + '<strong id="bookDownloadCount">' + ((window.YAHYA_COUNTER && window.YAHYA_COUNTER.getBookStats(book.id).downloads) || 0).toLocaleString('en-US') + '</strong> <span class="t-ar">تحميل</span><span class="t-en">downloads</span></span>' : '') + '</div>' +
       '<div class="modal-actions">' +
       (book.pdf ? '<button class="btn btn-primary" type="button" data-action="pdf-book" data-id="' + esc(book.id) + '">' + I.bookOpen + esc(t('readNow')) + '</button>' : '') +
       '<button class="btn btn-ghost" type="button" data-action="cite-book" data-id="' + esc(book.id) + '">' + I.quote + esc(t('cite')) + '</button>' +
       '<button class="btn btn-ghost" type="button" data-action="share-book" data-id="' + esc(book.id) + '">' + I.share + esc(t('share')) + '</button>' +
       (book.pdf ? '<a class="btn btn-ghost" href="' + esc(book.pdf) + '" download>' + I.download + esc(t('downloadPdf')) + '</a>' : '') +
       '</div>' +
+      (book.id === 'book-05' ? '<div style="margin:14px 0;padding:12px 16px;background:var(--green-soft);border-right:4px solid var(--green);border-radius:8px;font-size:14px;line-height:1.7"><strong style="color:var(--green)">📌 تنبيه للقراء:</strong> هذا الكتاب متاح بالكامل (394 صفحة) عبر عارض القراءة المباشر بالموقع أو عبر تحميل ملف الـ PDF كاملاً. إذا كنت تتصفح عبر موقع (نور للكتب) فإن المنصة تقتصر على عينة معاينة لأول 20 صفحة فقط، لذا يُرجى استخدام زر <strong>(اقرأ الآن)</strong> أدناه للمطالعة الكاملة.</div>' : '') +
       '<div class="modal-section"><h3>' + esc(t('summary')) + '</h3><p>' + esc(summaryOf(book)) + '</p></div>' +
       (chapters.length ? '<div class="modal-section"><h3>' + esc(t('contents')) + '</h3><div class="chapter-list">' +
         chapters.map((chapter, index) => '<details class="chapter-item"><summary>' + esc(chapter.title_ar || chapter.title_en || (t('part') + ' ' + (index + 1))) + '</summary><p>' + esc(chapter.text_ar || chapter.text_en || '') + '</p></details>').join('') +
@@ -425,7 +430,9 @@
       '<h2 class="' + (Y.titleIsArabicOnly(paper) ? 'ar-text' : '') + '">' + esc(titleOf(paper)) + '</h2>' +
       '<p class="book-modal-sub">' + esc(subOf(paper)) + '</p>' +
       '<div class="modal-meta"><span class="chip">' + esc(paper.year) + '</span><span class="chip">' + esc(venueOf(paper)) + '</span>' +
-      (placeOf(paper) ? '<span class="chip">' + esc(placeOf(paper)) + '</span>' : '') + (doi ? '<span class="chip chip--green">DOI</span>' : '') + '</div>' +
+      (placeOf(paper) ? '<span class="chip">' + esc(placeOf(paper)) + '</span>' : '') + (doi ? '<span class="chip chip--green">DOI</span>' : '') +
+      '<span class="chip chip--counter" title="' + (Y.lang === 'ar' ? 'عدد القراءات' : 'Total reads') + '">' + I.eye + '<strong id="paperReadCount">' + ((window.YAHYA_COUNTER && window.YAHYA_COUNTER.getPaperStats(paper.id).reads) || 0).toLocaleString('en-US') + '</strong> <span class="t-ar">قراءة</span><span class="t-en">reads</span></span>' +
+      (paper.pdf ? '<span class="chip chip--counter" title="' + (Y.lang === 'ar' ? 'عدد مرات التحميل' : 'Total downloads') + '">' + I.download + '<strong id="paperDownloadCount">' + ((window.YAHYA_COUNTER && window.YAHYA_COUNTER.getPaperStats(paper.id).downloads) || 0).toLocaleString('en-US') + '</strong> <span class="t-ar">تحميل</span><span class="t-en">downloads</span></span>' : '') + '</div>' +
       '<div class="modal-actions">' +
       (paper.pdf ? '<button class="btn btn-primary" type="button" data-action="pdf-paper" data-id="' + esc(paper.id) + '">' + I.bookOpen + esc(t('readPdf')) + '</button>' : '') +
       '<button class="btn btn-ghost" type="button" data-action="cite-paper" data-id="' + esc(paper.id) + '">' + I.quote + esc(t('cite')) + '</button>' +
@@ -1387,6 +1394,7 @@
   function openBookPdf(id) {
     const book = Y.BOOKS.find((item) => item.id === id);
     if (!book || !book.pdf) return;
+    if (window.YAHYA_COUNTER) { window.YAHYA_COUNTER.trackBookRead(book.id, titleOf(book)); }
     const meta = [book.year, bookTypeLabel(book.typ), book.pages ? book.pages + ' ' + t('pages') : '', publisherOf(book)].filter(Boolean).join(' · ');
     openPdf(book.pdf, titleOf(book), meta, book);
   }
@@ -1394,13 +1402,14 @@
   function openPaperPdf(id) {
     const paper = Y.PAPERS.find((item) => item.id === id);
     if (!paper || !paper.pdf) return;
+    if (window.YAHYA_COUNTER) { window.YAHYA_COUNTER.trackPaperRead(paper.id, titleOf(paper)); }
     const meta = [paper.year, paperTypeLabel(paper.typ), venueOf(paper)].filter(Boolean).join(' · ');
     openPdf(paper.pdf, titleOf(paper), meta, paper);
   }
 
   function openCvPdf() {
     const title = ar() ? 'السيرة الذاتية — د. يحيى أحمد المرهبي' : 'Academic CV — Dr. Yahya Al-Marhabi';
-    const meta = ar() ? 'نسخة 2025 · عربية وإنجليزية' : '2025 Edition · Arabic & English';
+    const meta = ar() ? 'نسخة 2026 · عربية وإنجليزية' : '2026 Edition · Arabic & English';
     openPdf(Y.CV_PDF, title, meta, null);
   }
 
@@ -1878,10 +1887,14 @@
     updateProgress();
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', boot);
-  } else {
+  function startSite() {
     boot();
+    if (window.YAHYA_COUNTER) { window.YAHYA_COUNTER.init(); }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', startSite);
+  } else {
+    startSite();
   }
 
   /* expose a few helpers pages may need */

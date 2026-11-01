@@ -218,7 +218,7 @@
       title: t('bioTitle'),
       lead: t('bioLead'),
       chips: '<span class="chip"><strong>2016</strong> ' + esc(t('phd')) + '</span>' +
-        '<span class="chip"><strong>30+</strong> ' + esc(t('yearsExp')) + '</span>' +
+        '<span class="chip"><strong>35+</strong> ' + esc(t('yearsExp')) + '</span>' +
         '<span class="chip"><strong>' + (currentStats().books || Y.BOOKS.length) + '</strong> ' + esc(t('booksCount')) + '</span>' +
         '<span class="chip"><strong>' + (currentStats().papers || Y.PAPERS.length) + '</strong> ' + esc(ar() ? 'بحث ودراسة' : 'papers') + '</span>'
     }) +
@@ -245,7 +245,11 @@
       '<section class="section"><div class="container"><div class="about-lists">' +
       '<div class="list-block"><h3>' + esc(t('activities')) + '</h3><div class="mini-list">' + activities + '</div></div>' +
       '<div class="list-block"><h3>' + esc(t('training')) + '</h3><div class="mini-list">' + training + '</div></div>' +
-      '</div></div></section>';
+      '</div></div></section>' +
+      '<section class="section-tight"><div class="container"><div class="section-head"><div><h2 class="section-title"><span class="t-ar">أبحاث ومؤلفات قيد النشر والتحكيم</span><span class="t-en">Forthcoming Works & Research</span></h2></div></div>' +
+      '<div class="forthcoming-grid">' + (((Y.SITE && Y.SITE.forthcoming) || (typeof SITE !== "undefined" && SITE.forthcoming) || []).map(f => '<div class="card" style="padding:20px;border:1px solid var(--line);border-radius:12px;background:var(--surface)"><div class="eyebrow" style="color:var(--brass);font-weight:600">' + esc(ar() ? f.field_ar : f.field_en) + '</div><h3 style="margin:8px 0;font-size:16px">' + esc(ar() ? f.title_ar : f.title_en) + '</h3><p class="meta" style="color:var(--muted);font-size:13.5px">' + esc(ar() ? f.type_ar : f.type_en) + '</p></div>').join('')) + '</div></div></section>' +
+      '<section class="section"><div class="container"><div class="section-head"><div><h2 class="section-title"><span class="t-ar">المعرفون الأكاديميون</span><span class="t-en">Academic References</span></h2></div></div>' +
+      '<div class="references-grid">' + (((Y.SITE && Y.SITE.references) || (typeof SITE !== "undefined" && SITE.references) || []).map(r => '<div class="card" style="padding:22px;border:1px solid var(--line);border-radius:12px;background:var(--surface)"><h3 style="margin:0 0 6px 0;font-size:17px;color:var(--green)">' + esc(ar() ? r.name_ar : r.name_en) + '</h3><p class="role" style="color:var(--ink-2);font-weight:500;margin-bottom:12px">' + esc(ar() ? r.title_ar : r.title_en) + '</p><div class="ref-contact"><span>' + I.phone + ' <a href="tel:' + (r.phone ? r.phone.replace(/\\s+/g,"") : "") + '" dir="ltr">' + esc(r.phone) + '</a></span><span>' + I.mail + ' <a href="mailto:' + esc(r.email) + '">' + esc(r.email) + '</a></span></div></div>').join('')) + '</div></div></section>';
   };
 
   /* ============================================================
