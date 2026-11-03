@@ -60,11 +60,7 @@
     const latestBook = sortBooks(Y.BOOKS, 'newest')[0];
     const selectedBooks = sortBooks(Y.BOOKS, 'newest').filter((b) => latestBook && b.id !== latestBook.id).slice(0, 6);
     const papers = sortPapers(Y.PAPERS, 'newest').slice(0, 4);
-    const picks = ['fb-4130068727127210', 'fb-4124138437720239', 'hk-01', 'aj-01', 'hk-05', 'series-tabashir']
-      .map((id) => Y.INDEX.find((a) => a.id === id)).filter(Boolean);
-    if (picks.length < 6) {
-      sortArticles(Y.INDEX, 'newest').forEach((a) => { if (picks.length < 6 && !picks.includes(a)) picks.push(a); });
-    }
+    const picks = sortArticles(Y.INDEX, 'newest').slice(0, 6);
     const stats = currentStats();
     const quoteArticle = Y.INDEX.find((a) => a.id === 'fb-4130068727127210') || latest;
 
