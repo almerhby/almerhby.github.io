@@ -161,6 +161,7 @@
       '<span>' + I.bookOpen + esc(sourceLabel(article.source)) + '</span>' +
       '<span>' + I.clock + esc(Y.readingTime(read)) + '</span>' +
       '<span>' + I.file + esc(ar() ? article.category_ar : article.category_en || article.category_ar) + '</span>' +
+      '<span>' + I.eye + '<strong id="asideViewsCount">' + (window.YAHYA_COUNTER ? Number(window.YAHYA_COUNTER.getArticleReads(article.id)).toLocaleString('en-US') : '—') + '</strong> <span class="t-ar">قراءة</span><span class="t-en">reads</span></span>' +
       '</div></div>' +
       (parts.length ? '<div class="aside-card"><h4>' + esc(t('inThisSeries')) + ' · ' + parts.length + '</h4><nav class="series-nav">' +
         parts.map((part) => '<a href="#part-' + part.part + '">' + esc(part.part) + '. ' + esc(Y.truncate(part.title_ar || part.title_en || '', 58)) + '</a>').join('') +
@@ -205,7 +206,8 @@
       '<div class="article-byline"><span>' + I.calendar + esc(formatDate(article.date, true)) + '</span><span class="dot"></span>' +
       '<span>' + I.bookOpen + esc(sourceLabel(article.source)) + '</span><span class="dot"></span>' +
       '<span>' + I.clock + esc(Y.readingTime(read)) + '</span>' +
-      (article.parts_count ? '<span class="dot"></span><span>' + esc(article.parts_count) + ' ' + esc(t('parts')) + '</span>' : '') + '</div>' +
+      (article.parts_count ? '<span class="dot"></span><span>' + esc(article.parts_count) + ' ' + esc(t('parts')) + '</span>' : '') +
+      '<span class="dot"></span><span class="byline-stat">' + I.eye + '<span id="articleViewsCount" data-counter="article-views">' + (window.YAHYA_COUNTER ? Number(window.YAHYA_COUNTER.getArticleReads(article.id)).toLocaleString('en-US') : '—') + '</span> <span class="t-ar">قراءة</span><span class="t-en">reads</span></span></div>' +
       '<div class="article-tools">' +
       '<div class="font-controls" role="group" aria-label="' + esc(t('fontSize')) + '"><button type="button" data-action="font-sm" title="' + esc(t('smaller')) + '" aria-label="' + esc(t('smaller')) + '">A−</button><button type="button" data-action="font-lg" title="' + esc(t('larger')) + '" aria-label="' + esc(t('larger')) + '">A+</button></div>' +
       '<button class="btn btn-ghost" type="button" data-action="print">' + I.print + esc(t('print')) + '</button>' +
@@ -222,6 +224,10 @@
       '</div>' + asideHTML(article) + '</div>' +
       '<section class="related-section"><h2>' + esc(t('related')) + '</h2><div class="related-grid">' + related.map((item) => articleCard(item)).join('') + '</div></section>' +
       '</div></article>';
+
+    if (window.YAHYA_COUNTER) {
+      window.YAHYA_COUNTER.trackArticleRead(article.id, title);
+    }
 
     if (Y.ui && Y.ui.updateProgress) setTimeout(Y.ui.updateProgress, 30);
     if (window.location.hash) {
