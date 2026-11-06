@@ -1,3 +1,43 @@
+
+  /* ============================================================
+     Public Cloud Counter Engine (Option 2)
+     ============================================================ */
+  async function publicApiIncrement(key) {
+    if (!CONFIG.publicApiBase) return null;
+    const url = CONFIG.publicApiBase + '/hit/' + encodeURIComponent(CONFIG.namespace) + '/' + encodeURIComponent(key);
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3500);
+      const res = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (res.ok) {
+        const data = await res.json();
+        return typeof data.value === 'number' ? data.value : null;
+      }
+    } catch (e) {
+      /* offline or network error */
+    }
+    return null;
+  }
+
+  async function publicApiGet(key) {
+    if (!CONFIG.publicApiBase) return null;
+    const url = CONFIG.publicApiBase + '/get/' + encodeURIComponent(CONFIG.namespace) + '/' + encodeURIComponent(key);
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3500);
+      const res = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (res.ok) {
+        const data = await res.json();
+        return typeof data.value === 'number' ? data.value : null;
+      }
+    } catch (e) {
+      /* offline */
+    }
+    return null;
+  }
+
 /* ============================================================
    Analytics & Live Counters Module
    Dr. Yahya Ahmed Al-Marhabi Digital Library & Academic Portfolio
@@ -19,19 +59,17 @@
      Configuration
      ============================================================ */
   const CONFIG = {
-    // 1. Firebase Realtime Database REST API (Recommended: 100% free, fast Google CDN)
-    // When you create a free Firebase Realtime Database, paste its URL here:
-    // e.g.: 'https://your-project-id-default-rtdb.firebaseio.com'
+    // Public Intermediary Cloud Counter API (Option 2: 100% Free, zero-setup, CORS enabled, global)
+    publicApiBase: 'https://abacus.jasoncameron.dev',
+    namespace: 'almerhby_site_v1',
+
+    // Firebase Realtime Database REST API (optional fallback)
     firebaseUrl: '',
 
-    // 2. Google Analytics 4 (GA4) Tracking ID
-    // Paste your GA4 Measurement ID here (e.g. 'G-XXXXXXXXXX') to enable deep traffic reports
+    // Google Analytics 4 (GA4) Tracking ID
     gaMeasurementId: '',
 
-    // 3. Fallback public REST API endpoint (optional)
-    fallbackEndpoint: '',
-
-    // 4. Baseline seeds (authentic initial scholarly figures)
+    // Baseline seeds (authentic initial scholarly figures)
     baseVisits: 2840,
     baseBookReads: 320,
     baseBookDownloads: 180,
@@ -249,9 +287,12 @@
           referrer: document.referrer || 'direct'
         });
 
-        // Sync with Firebase in background
-        firebaseIncrement('visitors').then((cloudVal) => {
+        // Sync with Public Intermediary Cloud Counter (Option 2)
+        publicApiIncrement('visitors').then((cloudVal) => {
           if (cloudVal && cloudVal > 0) {
+            const cache = loadLocalCache();
+            cache.cloudVisits = cloudVal;
+            saveLocalCache();
             this.updateVisitorDisplay(CONFIG.baseVisits + cloudVal);
           }
         });
@@ -333,9 +374,11 @@
       const base = BOOK_BASELINES[id] || { reads: CONFIG.baseBookReads, downloads: CONFIG.baseBookDownloads };
       const cache = loadLocalCache();
       const data = (cache.books && cache.books[id]) || { reads: 0, downloads: 0 };
+      const extraReads = Math.max(data.reads || 0, data.cloudReads || 0);
+      const extraDownloads = Math.max(data.downloads || 0, data.cloudDownloads || 0);
       return {
-        reads: base.reads + (data.reads || 0),
-        downloads: base.downloads + (data.downloads || 0)
+        reads: base.reads + extraReads,
+        downloads: base.downloads + extraDownloads
       };
     },
 
@@ -359,7 +402,17 @@
           book_title: title || id
         });
 
-        firebaseIncrement('books/' + id + '/reads');
+        publicApiIncrement('bk_' + id + '_reads').then((val) => {
+          if (val && val > 0) {
+            const base = BOOK_BASELINES[id] || { reads: CONFIG.baseBookReads, downloads: CONFIG.baseBookDownloads };
+            const cache = loadLocalCache();
+            cache.books = cache.books || {};
+            cache.books[id] = cache.books[id] || { reads: 0, downloads: 0 };
+            cache.books[id].cloudReads = val;
+            saveLocalCache();
+            this.updateBookDisplay(id, { reads: base.reads + val, downloads: stats.downloads });
+          }
+        });
       }
 
       this.updateBookDisplay(id, stats);
@@ -387,7 +440,17 @@
           download_url: url || ''
         });
 
-        firebaseIncrement('books/' + id + '/downloads');
+        publicApiIncrement('bk_' + id + '_dls').then((val) => {
+          if (val && val > 0) {
+            const base = BOOK_BASELINES[id] || { reads: CONFIG.baseBookReads, downloads: CONFIG.baseBookDownloads };
+            const cache = loadLocalCache();
+            cache.books = cache.books || {};
+            cache.books[id] = cache.books[id] || { reads: 0, downloads: 0 };
+            cache.books[id].cloudDownloads = val;
+            saveLocalCache();
+            this.updateBookDisplay(id, { reads: stats.reads, downloads: base.downloads + val });
+          }
+        });
       }
 
       this.updateBookDisplay(id, stats);

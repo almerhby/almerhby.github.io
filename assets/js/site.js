@@ -1148,7 +1148,13 @@
 
     const isExplicitSingle = pdfState.flipSpreadMode === 'single';
     const isExplicitDouble = pdfState.flipSpreadMode === 'double';
-    const isSingle = isExplicitSingle || (!isExplicitDouble && stageW < 740);
+    const isMobile = stageW < 740;
+    const isSingle = isMobile || isExplicitSingle || (!isExplicitDouble && stageW < 740);
+
+    const spreadBtn = document.getElementById('flipSpreadBtn');
+    if (spreadBtn) {
+      spreadBtn.style.display = isMobile ? 'none' : 'inline-flex';
+    }
 
     if (bookEl) {
       bookEl.classList.toggle('is-single-page', isSingle);
@@ -1435,7 +1441,7 @@
         const dx = e.changedTouches[0].clientX - pdfState.touchStartX;
         const dy = e.changedTouches[0].clientY - pdfState.touchStartY;
         const dt = Date.now() - pdfState.touchStartTime;
-        if (dt < 600 && Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.4) {
+        if (dt < 600 && Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 2.2) {
           if (dx < 0) {
             changePdfPage(1); // Swipe left -> Next page
           } else {
@@ -1462,7 +1468,7 @@
         const dx = e.changedTouches[0].clientX - touchStartX;
         const dy = e.changedTouches[0].clientY - touchStartY;
         const dt = Date.now() - touchStartTime;
-        if (dt < 600 && Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.3) {
+        if (dt < 600 && Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 2.2) {
           if (dx < 0) {
             flipbookTurn(1); // Swipe left -> Next
           } else {
@@ -1514,6 +1520,11 @@
       window.addEventListener('keydown', (e) => {
         const dialog = document.getElementById('pdfDialog');
         if (!dialog || !dialog.open) return;
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          closeAllDialogs();
+          return;
+        }
         if (e.key === 'ArrowRight') {
           e.preventDefault();
           if (pdfState.mode === 'flipbook') {
@@ -1550,24 +1561,42 @@
       pdfState.renderTask = null;
     }
     const canvasR = document.getElementById('flipCanvasRight');
-    if (canvasR && canvasR._renderTask) {
-      try { canvasR._renderTask.cancel(); } catch (e) {}
-      canvasR._renderTask = null;
+    if (canvasR) {
+      if (canvasR._renderTask) {
+        try { canvasR._renderTask.cancel(); } catch (e) {}
+        canvasR._renderTask = null;
+      }
+      canvasR.width = 0;
+      canvasR.height = 0;
     }
     const canvasL = document.getElementById('flipCanvasLeft');
-    if (canvasL && canvasL._renderTask) {
-      try { canvasL._renderTask.cancel(); } catch (e) {}
-      canvasL._renderTask = null;
+    if (canvasL) {
+      if (canvasL._renderTask) {
+        try { canvasL._renderTask.cancel(); } catch (e) {}
+        canvasL._renderTask = null;
+      }
+      canvasL.width = 0;
+      canvasL.height = 0;
     }
     const frame = document.getElementById('pdfFrame');
     if (frame) frame.src = 'about:blank';
     const googleFrame = document.getElementById('pdfGoogleFrame');
     if (googleFrame) googleFrame.src = 'about:blank';
     const host = document.getElementById('pdfPagesHost');
-    if (host) host.innerHTML = '';
+    if (host) {
+      host.querySelectorAll('canvas').forEach((c) => {
+        if (c._renderTask) { try { c._renderTask.cancel(); } catch (e) {} }
+        c.width = 0;
+        c.height = 0;
+      });
+      host.innerHTML = '';
+    }
     const shell = document.querySelector('.pdf-shell');
     if (shell) shell.classList.remove('is-fullscreen');
     pdfState.isFlipping = false;
+    if (pdfState.doc) {
+      try { pdfState.doc.cleanup(); } catch (e) {}
+    }
   }
 
   function openBookPdf(id) {

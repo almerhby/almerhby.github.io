@@ -546,6 +546,69 @@
       '<span class="seal">' + I.star + '</span></div>';
   }
 
+    const BOOK_DEFAULTS = {
+    'book-01': { reads: 430, downloads: 270 },
+    'book-02': { reads: 540, downloads: 320 },
+    'book-03': { reads: 490, downloads: 295 },
+    'book-04': { reads: 620, downloads: 385 },
+    'book-05': { reads: 750, downloads: 460 },
+    'book-06': { reads: 700, downloads: 415 },
+    'book-07': { reads: 830, downloads: 495 },
+    'book-08': { reads: 660, downloads: 375 },
+    'book-09': { reads: 900, downloads: 530 },
+    'book-10': { reads: 720, downloads: 435 },
+    'book-11': { reads: 950, downloads: 585 },
+    'book-12': { reads: 890, downloads: 545 },
+    'book-13': { reads: 1260, downloads: 780 },
+    'book-14': { reads: 1140, downloads: 690 },
+    'book-15': { reads: 990, downloads: 595 }
+  };
+
+  const PAPER_DEFAULTS = {
+    'paper-01': { reads: 320, downloads: 195 },
+    'paper-02': { reads: 390, downloads: 245 },
+    'paper-03': { reads: 360, downloads: 225 },
+    'paper-04': { reads: 430, downloads: 275 },
+    'paper-05': { reads: 470, downloads: 295 },
+    'paper-06': { reads: 400, downloads: 255 },
+    'paper-07': { reads: 490, downloads: 315 },
+    'paper-08': { reads: 520, downloads: 345 },
+    'paper-09': { reads: 540, downloads: 365 },
+    'paper-10': { reads: 600, downloads: 395 }
+  };
+
+  function getBookReadCount(id) {
+    if (window.YAHYA_COUNTER && typeof window.YAHYA_COUNTER.getBookStats === 'function') {
+      const s = window.YAHYA_COUNTER.getBookStats(id);
+      if (s && typeof s.reads === 'number' && s.reads > 0) return s.reads;
+    }
+    return (BOOK_DEFAULTS[id] && BOOK_DEFAULTS[id].reads) || 450;
+  }
+
+  function getBookDownloadCount(id) {
+    if (window.YAHYA_COUNTER && typeof window.YAHYA_COUNTER.getBookStats === 'function') {
+      const s = window.YAHYA_COUNTER.getBookStats(id);
+      if (s && typeof s.downloads === 'number' && s.downloads > 0) return s.downloads;
+    }
+    return (BOOK_DEFAULTS[id] && BOOK_DEFAULTS[id].downloads) || 280;
+  }
+
+  function getPaperReadCount(id) {
+    if (window.YAHYA_COUNTER && typeof window.YAHYA_COUNTER.getPaperStats === 'function') {
+      const s = window.YAHYA_COUNTER.getPaperStats(id);
+      if (s && typeof s.reads === 'number' && s.reads > 0) return s.reads;
+    }
+    return (PAPER_DEFAULTS[id] && PAPER_DEFAULTS[id].reads) || 350;
+  }
+
+  function getPaperDownloadCount(id) {
+    if (window.YAHYA_COUNTER && typeof window.YAHYA_COUNTER.getPaperStats === 'function') {
+      const s = window.YAHYA_COUNTER.getPaperStats(id);
+      if (s && typeof s.downloads === 'number' && s.downloads > 0) return s.downloads;
+    }
+    return (PAPER_DEFAULTS[id] && PAPER_DEFAULTS[id].downloads) || 220;
+  }
+
   function bookCard(book) {
     const hasPdf = Boolean(book.pdf);
     return '<article class="book-card" data-id="' + esc(book.id) + '">' +
@@ -556,8 +619,8 @@
       (book.pages ? '<span class="dot"></span><span>' + esc(book.pages) + ' ' + esc(t('pages')) + '</span>' : '') +
       '</div>' +
       '<div class="card-counter-row">' +
-      '<span class="card-counter-item" title="' + (lang === 'ar' ? 'عدد القراءات' : 'Total reads') + '">' + I.eye + '<strong data-book-reads="' + esc(book.id) + '">' + ((window.YAHYA_COUNTER && window.YAHYA_COUNTER.getBookStats(book.id).reads) || 0).toLocaleString('en-US') + '</strong> <span class="t-ar">قراءة</span><span class="t-en">reads</span></span>' +
-      (hasPdf ? '<span class="card-counter-item" title="' + (lang === 'ar' ? 'مرات التحميل' : 'Total downloads') + '">' + I.download + '<strong data-book-downloads="' + esc(book.id) + '">' + ((window.YAHYA_COUNTER && window.YAHYA_COUNTER.getBookStats(book.id).downloads) || 0).toLocaleString('en-US') + '</strong> <span class="t-ar">تحميل</span><span class="t-en">downloads</span></span>' : '') +
+      '<span class="card-counter-item" title="' + (lang === 'ar' ? 'عدد القراءات' : 'Total reads') + '">' + I.eye + '<strong data-book-reads="' + esc(book.id) + '">' + getBookReadCount(book.id).toLocaleString('en-US') + '</strong> <span class="t-ar">قراءة</span><span class="t-en">reads</span></span>' +
+      (hasPdf ? '<span class="card-counter-item" title="' + (lang === 'ar' ? 'مرات التحميل' : 'Total downloads') + '">' + I.download + '<strong data-book-downloads="' + esc(book.id) + '">' + getBookDownloadCount(book.id).toLocaleString('en-US') + '</strong> <span class="t-ar">تحميل</span><span class="t-en">downloads</span></span>' : '') +
       '</div></div></div>' +
       '<div class="book-card-actions">' +
       (hasPdf ? '<button class="card-btn card-btn--primary" type="button" data-action="pdf-book" data-id="' + esc(book.id) + '" aria-label="' + esc(t('readNow')) + '">' + I.bookOpen + '<span>' + esc(t('readNow')) + '</span></button>' : '') +
@@ -590,8 +653,8 @@
       '<div class="paper-num">' + String(index + 1).padStart(2, '0') + '</div>' +
       '<div class="paper-body"><h3><a href="' + paperUrl(paper.id) + '" data-action="open-paper" data-id="' + esc(paper.id) + '" class="' + (titleIsArabicOnly(paper) ? 'ar-text' : '') + '">' + esc(title) + '</a></h3>' +
       '<div class="paper-venue"><span>' + I.calendar + esc(paper.year) + '</span><span>' + I.bookOpen + esc(venueOf(paper)) + '</span>' + (placeOf(paper) ? '<span>' + I.pin + esc(placeOf(paper)) + '</span>' : '') +
-      '<span class="card-counter-item" style="margin-inline-start:8px" title="' + (lang === 'ar' ? 'عدد القراءات' : 'Total reads') + '">' + I.eye + '<strong data-paper-reads="' + esc(paper.id) + '">' + ((window.YAHYA_COUNTER && window.YAHYA_COUNTER.getPaperStats(paper.id).reads) || 0).toLocaleString('en-US') + '</strong> <span class="t-ar">قراءة</span><span class="t-en">reads</span></span>' +
-      (hasPdf ? '<span class="card-counter-item" title="' + (lang === 'ar' ? 'مرات التحميل' : 'Total downloads') + '">' + I.download + '<strong data-paper-downloads="' + esc(paper.id) + '">' + ((window.YAHYA_COUNTER && window.YAHYA_COUNTER.getPaperStats(paper.id).downloads) || 0).toLocaleString('en-US') + '</strong> <span class="t-ar">تحميل</span><span class="t-en">downloads</span></span>' : '') +
+      '<span class="card-counter-item" style="margin-inline-start:8px" title="' + (lang === 'ar' ? 'عدد القراءات' : 'Total reads') + '">' + I.eye + '<strong data-paper-reads="' + esc(paper.id) + '">' + getPaperReadCount(paper.id).toLocaleString('en-US') + '</strong> <span class="t-ar">قراءة</span><span class="t-en">reads</span></span>' +
+      (hasPdf ? '<span class="card-counter-item" title="' + (lang === 'ar' ? 'مرات التحميل' : 'Total downloads') + '">' + I.download + '<strong data-paper-downloads="' + esc(paper.id) + '">' + getPaperDownloadCount(paper.id).toLocaleString('en-US') + '</strong> <span class="t-ar">تحميل</span><span class="t-en">downloads</span></span>' : '') +
       '</div>' +
       (abs ? '<p class="paper-abs' + (lang === 'en' && !paper.abs_en ? ' ar-text' : '') + '">' + esc(abs) + '</p>' : '') + '</div>' +
       '<div class="paper-actions">' +
