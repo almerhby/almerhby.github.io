@@ -212,6 +212,10 @@
       soundOff: 'صوت التقليب: صامت',
       flipPrev: 'الصفحة السابقة',
       flipNext: 'الصفحة التالية',
+      flipWidth: 'تكبير العرض',
+      flipFit: 'ملاءمة الشاشة',
+      spreadTwo: 'صفحتان',
+      spreadOne: 'صفحة واحدة',
       realisticBook: 'عرض الكتاب الواقعي 3D'
     },
     en: {
@@ -296,6 +300,10 @@
       soundOff: 'Page sound: Muted',
       flipPrev: 'Previous page',
       flipNext: 'Next page',
+      flipWidth: 'Fit Width',
+      flipFit: 'Fit Screen',
+      spreadTwo: 'Two pages',
+      spreadOne: 'Single page',
       realisticBook: 'Realistic 3D Book'
     }
   };

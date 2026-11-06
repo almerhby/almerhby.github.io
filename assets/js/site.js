@@ -260,6 +260,14 @@
       '<span class="sound-icon">' + I.volume + '</span>' +
       '<span id="flipbookSoundLabel">' + esc(t('soundOn')) + '</span>' +
       '</button>' +
+      '<button id="flipWidthBtn" class="pdf-pill-btn flip-width-btn" type="button" data-action="toggle-flip-width" title="' + esc(t('flipWidth') || 'تكبير العرض') + '">' +
+      '<span>↔️</span>' +
+      '<span id="flipWidthLabel">' + esc(t('flipWidth') || 'تكبير العرض') + '</span>' +
+      '</button>' +
+      '<button id="flipSpreadBtn" class="pdf-pill-btn flip-spread-btn" type="button" data-action="toggle-flip-spread" title="' + esc(t('spreadTwo') || 'صفحتان') + '">' +
+      '<span id="flipSpreadIcon">📖</span>' +
+      '<span id="flipSpreadLabel">' + esc(t('spreadTwo') || 'صفحتان') + '</span>' +
+      '</button>' +
       '<span class="flipbook-hint-chip">💡 ' + (ar() ? 'انقر على الصفحة أو الأسهم للتقليب' : 'Click page or arrows to turn') + '</span>' +
       '</div>' +
       '<div class="pdf-subgroup">' +
@@ -272,23 +280,23 @@
       '<div class="flipbook-desk">' +
       '<div id="flipbookBook" class="flipbook-book" data-dir="' + (ar() ? 'rtl' : 'ltr') + '">' +
       '<div class="flipbook-spine"></div>' +
-      '<div class="flipbook-page-wrapper page-left" data-action="flip-click-left" title="' + esc(t('flipPrev')) + '">' +
+      '<div class="flipbook-page-wrapper page-left" data-action="flip-click-left" title="' + esc(t('flipNext')) + ' (' + (ar() ? 'تقليب لليسار' : 'Turn left') + ')">' +
       '<div class="flipbook-page-inner">' +
       '<canvas id="flipCanvasLeft" class="flip-canvas" dir="ltr" style="direction:ltr;"></canvas>' +
       '<div id="flipPageNumLeft" class="flip-page-number"></div>' +
       '</div>' +
       '<div class="flip-edge-shadow left-edge"></div>' +
-      '<button class="flip-nav-arrow arrow-left" type="button" data-action="flip-click-left" aria-label="' + esc(t('flipPrev')) + '" title="' + esc(t('flipPrev')) + '">' +
+      '<button class="flip-nav-arrow arrow-left" type="button" data-action="flip-click-left" aria-label="' + esc(t('flipNext')) + '" title="' + esc(t('flipNext')) + '">' +
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>' +
       '</button>' +
       '</div>' +
-      '<div class="flipbook-page-wrapper page-right" data-action="flip-click-right" title="' + esc(t('flipNext')) + '">' +
+      '<div class="flipbook-page-wrapper page-right" data-action="flip-click-right" title="' + esc(t('flipPrev')) + ' (' + (ar() ? 'رجوع لليمين' : 'Turn right') + ')">' +
       '<div class="flipbook-page-inner">' +
       '<canvas id="flipCanvasRight" class="flip-canvas" dir="ltr" style="direction:ltr;"></canvas>' +
       '<div id="flipPageNumRight" class="flip-page-number"></div>' +
       '</div>' +
       '<div class="flip-edge-shadow right-edge"></div>' +
-      '<button class="flip-nav-arrow arrow-right" type="button" data-action="flip-click-right" aria-label="' + esc(t('flipNext')) + '" title="' + esc(t('flipNext')) + '">' +
+      '<button class="flip-nav-arrow arrow-right" type="button" data-action="flip-click-right" aria-label="' + esc(t('flipPrev')) + '" title="' + esc(t('flipPrev')) + '">' +
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>' +
       '</button>' +
       '</div>' +
@@ -298,16 +306,16 @@
       '</div>' +
       '</div></div></div>' +
       '<div class="pdf-bottom-bar flipbook-bottom-bar">' +
-      '<button id="flipPrevBtn" class="btn btn-sm btn-ghost pdf-page-btn" type="button" data-action="flip-prev">' +
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>' +
+      '<button id="flipPrevBtn" class="btn btn-sm btn-ghost pdf-page-btn" type="button" data-action="flip-prev" title="' + esc(t('flipPrev')) + '">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>' +
       '<span>' + esc(t('flipPrev')) + '</span>' +
       '</button>' +
       '<div id="flipbookStatus" class="flipbook-status-label"></div>' +
-      '<button id="flipNextBtn" class="btn btn-sm btn-ghost pdf-page-btn" type="button" data-action="flip-next">' +
+      '<button id="flipNextBtn" class="btn btn-sm btn-ghost pdf-page-btn" type="button" data-action="flip-next" title="' + esc(t('flipNext')) + '">' +
       '<span>' + esc(t('flipNext')) + '</span>' +
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>' +
       '</button>' +
-      '</div></div>' + +
+      '</div></div>' +
       '<div id="pdfGoogleView" class="pdf-view-pane">' +
       '<div class="pdf-notice-bar"><p>' + esc(t('googleNotice')) + '</p><button class="btn btn-sm btn-ghost" type="button" data-action="reload-google">' + esc(t('retry')) + '</button></div>' +
       '<div class="pdf-frame-wrap"><iframe id="pdfGoogleFrame" title="Google Docs Viewer" loading="lazy"></iframe></div>' +
@@ -1135,13 +1143,19 @@
     const stage = document.getElementById('flipbookStage');
     if (!stage) return;
     const bookEl = document.getElementById('flipbookBook');
-    const stageW = Math.max(280, stage.clientWidth - 32);
-    const stageH = Math.max(380, stage.clientHeight - 24);
-    const isSingle = stageW < 768;
+    const stageW = Math.max(280, stage.clientWidth - 16);
+    const stageH = Math.max(380, stage.clientHeight - 20);
+
+    const isExplicitSingle = pdfState.flipSpreadMode === 'single';
+    const isExplicitDouble = pdfState.flipSpreadMode === 'double';
+    const isSingle = isExplicitSingle || (!isExplicitDouble && stageW < 740);
 
     if (bookEl) {
       bookEl.classList.toggle('is-single-page', isSingle);
     }
+
+    const isFitWidth = Boolean(pdfState.flipFitWidth);
+    stage.classList.toggle('is-fit-width', isFitWidth);
 
     const cur = pdfState.flipPage || 1;
     const total = pdfState.totalPages || 1;
@@ -1177,8 +1191,31 @@
       }
     }
 
-    const maxPageW = isSingle ? Math.min(stageW - 16, 540) : Math.min((stageW - 36) / 2, 480);
-    const maxPageH = Math.min(stageH - 16, 680);
+    // Dynamic width & height computation
+    const availableW = stageW - (isSingle ? 12 : 24);
+    let maxPageW, maxPageH;
+
+    if (isFitWidth) {
+      maxPageW = isSingle ? Math.min(availableW, 1100) : Math.min(Math.floor(availableW / 2), 920);
+      maxPageH = Math.round(maxPageW * 1.48);
+    } else {
+      const targetW = isSingle ? Math.min(availableW, 950) : Math.floor(availableW / 2);
+      const targetH = Math.max(500, stageH - (isSingle ? 16 : 24));
+      const maxWFromH = Math.floor(targetH / 1.36);
+      maxPageW = Math.min(targetW, maxWFromH);
+      maxPageH = targetH;
+    }
+
+    // Update toolbar buttons
+    const widthBtn = document.getElementById('flipWidthBtn');
+    const widthLbl = document.getElementById('flipWidthLabel');
+    if (widthBtn) widthBtn.classList.toggle('active', isFitWidth);
+    if (widthLbl) widthLbl.textContent = isFitWidth ? (ar() ? 'ملاءمة الشاشة' : 'Fit Screen') : (ar() ? 'تكبير العرض' : 'Fit Width');
+
+    const spreadIcon = document.getElementById('flipSpreadIcon');
+    const spreadLbl = document.getElementById('flipSpreadLabel');
+    if (spreadIcon) spreadIcon.textContent = isSingle ? '📄' : '📖';
+    if (spreadLbl) spreadLbl.textContent = isSingle ? (ar() ? 'صفحة واحدة' : 'Single Page') : (ar() ? 'صفحتان' : 'Two Pages');
 
     const canvasR = document.getElementById('flipCanvasRight');
     const canvasL = document.getElementById('flipCanvasLeft');
@@ -1227,7 +1264,7 @@
       const unscaled = page.getViewport({ scale: 1 });
       const scaleW = maxWidth / unscaled.width;
       const scaleH = maxHeight / unscaled.height;
-      const cssScale = Math.min(scaleW, scaleH);
+      const cssScale = pdfState.flipFitWidth ? scaleW : Math.min(scaleW, scaleH);
 
       // High-resolution internal rasterization (minimum scale 2.2) ensures
       // that Arabic ligatures, kashidas (tatweel), and cursive joining strokes
@@ -1303,7 +1340,8 @@
   function flipbookTurn(direction) {
     if (!pdfState.doc || pdfState.isFlipping) return;
     const stage = document.getElementById('flipbookStage');
-    const isSingle = stage && (stage.clientWidth - 32 < 768);
+    const bookEl = document.getElementById('flipbookBook');
+    const isSingle = bookEl && bookEl.classList.contains('is-single-page');
     const total = pdfState.totalPages;
     const cur = pdfState.flipPage || 1;
 
@@ -1330,12 +1368,23 @@
     pdfState.isFlipping = true;
     playPageFlipSound();
 
-    const bookEl = document.getElementById('flipbookBook');
     const leaf = document.getElementById('flipTurningLeaf');
 
     if (bookEl && leaf) {
       const isNext = direction > 0;
       const turnClass = isNext ? 'flip-anim-next' : 'flip-anim-prev';
+
+      // Snapshot active turning page onto dynamic 3D leaf
+      const leafFront = leaf.querySelector('.flip-leaf-front');
+      const srcCanvas = isNext ? document.getElementById('flipCanvasRight') : document.getElementById('flipCanvasLeft');
+      if (srcCanvas && leafFront) {
+        try {
+          leafFront.style.backgroundImage = 'url(' + srcCanvas.toDataURL('image/jpeg', 0.85) + ')';
+        } catch (e) {
+          leafFront.style.backgroundImage = 'none';
+        }
+      }
+
       leaf.style.display = 'block';
       bookEl.classList.add(turnClass);
 
@@ -1345,12 +1394,26 @@
         bookEl.classList.remove(turnClass);
         leaf.style.display = 'none';
         pdfState.isFlipping = false;
-      }, 520);
+      }, 420);
     } else {
       pdfState.flipPage = targetPage;
       renderFlipbookSpread();
       pdfState.isFlipping = false;
     }
+  }
+
+  function toggleFlipWidth() {
+    pdfState.flipFitWidth = !pdfState.flipFitWidth;
+    renderFlipbookSpread();
+  }
+
+  function toggleFlipSpread() {
+    if (!pdfState.flipSpreadMode || pdfState.flipSpreadMode === 'double') {
+      pdfState.flipSpreadMode = 'single';
+    } else {
+      pdfState.flipSpreadMode = 'double';
+    }
+    renderFlipbookSpread();
   }
 
   function initPdfTouchEvents() {
@@ -1823,6 +1886,14 @@
       case 'toggle-flip-sound':
         event.preventDefault();
         toggleFlipSound();
+        break;
+      case 'toggle-flip-width':
+        event.preventDefault();
+        toggleFlipWidth();
+        break;
+      case 'toggle-flip-spread':
+        event.preventDefault();
+        toggleFlipSpread();
         break;
       case 'flip-prev':
         event.preventDefault();
