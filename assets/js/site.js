@@ -361,6 +361,10 @@
   }
 
   function closeAllDialogs() {
+    if (pdfState._pageObserver) {
+      try { pdfState._pageObserver.disconnect(); } catch (e) {}
+      pdfState._pageObserver = null;
+    }
     document.querySelectorAll('dialog[open]').forEach((dialog) => dialog.close());
     syncModalState();
     if (lastFocused && typeof lastFocused.focus === 'function') {
@@ -403,7 +407,7 @@
       (book.pdf ? '<button class="btn btn-primary" type="button" data-action="pdf-book" data-id="' + esc(book.id) + '">' + I.bookOpen + esc(t('readNow')) + '</button>' : '') +
       '<button class="btn btn-ghost" type="button" data-action="cite-book" data-id="' + esc(book.id) + '">' + I.quote + esc(t('cite')) + '</button>' +
       '<button class="btn btn-ghost" type="button" data-action="share-book" data-id="' + esc(book.id) + '">' + I.share + esc(t('share')) + '</button>' +
-      (book.pdf ? '<a class="btn btn-ghost" href="' + esc(book.pdf) + '" download>' + I.download + esc(t('downloadPdf')) + '</a>' : '') +
+      (book.pdf ? '<a class="btn btn-ghost" href="' + esc(book.pdf) + '" download data-download-book="' + esc(book.id) + '">' + I.download + esc(t('downloadPdf')) + '</a>' : '') +
       '</div>' +
       (book.id === 'book-05' ? '<div style="margin:14px 0;padding:12px 16px;background:var(--green-soft);border-right:4px solid var(--green);border-radius:8px;font-size:14px;line-height:1.7"><strong style="color:var(--green)">📌 تنبيه للقراء:</strong> هذا الكتاب متاح بالكامل (394 صفحة) عبر عارض القراءة المباشر بالموقع أو عبر تحميل ملف الـ PDF كاملاً. إذا كنت تتصفح عبر موقع (نور للكتب) فإن المنصة تقتصر على عينة معاينة لأول 20 صفحة فقط، لذا يُرجى استخدام زر <strong>(اقرأ الآن)</strong> أدناه للمطالعة الكاملة.</div>' : '') +
       '<div class="modal-section"><h3>' + esc(t('summary')) + '</h3><p>' + esc(summaryOf(book)) + '</p></div>' +
@@ -437,6 +441,7 @@
       (paper.pdf ? '<button class="btn btn-primary" type="button" data-action="pdf-paper" data-id="' + esc(paper.id) + '">' + I.bookOpen + esc(t('readPdf')) + '</button>' : '') +
       '<button class="btn btn-ghost" type="button" data-action="cite-paper" data-id="' + esc(paper.id) + '">' + I.quote + esc(t('cite')) + '</button>' +
       '<button class="btn btn-ghost" type="button" data-action="share-paper" data-id="' + esc(paper.id) + '">' + I.share + esc(t('share')) + '</button>' +
+      (paper.pdf ? '<a class="btn btn-ghost" href="' + esc(paper.pdf) + '" download data-download-paper="' + esc(paper.id) + '">' + I.download + esc(t('downloadPdf')) + '</a>' : '') +
       (doi ? '<a class="btn btn-ghost" href="' + esc(doi) + '" target="_blank" rel="noopener">' + I.link + esc(t('openDoi')) + '</a>' : '') +
       '</div>' +
       '<div class="modal-section"><h3>' + esc(t('abstract')) + '</h3><p>' + esc(abstractOf(paper)) + '</p></div>' +
@@ -879,39 +884,82 @@
   function renderContinuousPages() {
     if (!pdfState.doc) return;
     const host = document.getElementById('pdfPagesHost');
+    if (!host) return;
     host.innerHTML = '';
+
+    if (pdfState._pageObserver) {
+      try { pdfState._pageObserver.disconnect(); } catch (e) {}
+      pdfState._pageObserver = null;
+    }
+
     const container = document.getElementById('pdfCanvasContainer');
-    const containerWidth = Math.max(280, container.clientWidth - 28);
-    const count = Math.min(pdfState.totalPages, 20);
-
+    const containerWidth = Math.max(280, (container ? container.clientWidth : window.innerWidth) - 28);
+    const total = pdfState.totalPages;
     const currentDoc = pdfState.doc;
-    for (let i = 1; i <= count; i++) {
-      const wrapper = document.createElement('div');
-      wrapper.className = 'pdf-continuous-page';
-      wrapper.dataset.page = String(i);
-      const canvas = document.createElement('canvas');
-      canvas.className = 'pdf-page-canvas';
-      wrapper.appendChild(canvas);
-      host.appendChild(wrapper);
 
-      ((pageNum, c) => {
-        currentDoc.getPage(pageNum).then(async (page) => {
+    // Get page 1 aspect ratio to pre-size all page wrappers cleanly
+    currentDoc.getPage(1).then((firstPage) => {
+      if (pdfState.doc !== currentDoc) return;
+      const unscaled1 = firstPage.getViewport({ scale: 1 });
+      const cssScale1 = pdfState.scaleMode === 'fit-width' ? (containerWidth / unscaled1.width) : pdfState.currentScale;
+      const estWidth = Math.floor(unscaled1.width * cssScale1);
+      const estHeight = Math.floor(unscaled1.height * cssScale1);
+
+      // Create placeholders for ALL pages (1 to total)
+      for (let i = 1; i <= total; i++) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'pdf-continuous-page';
+        wrapper.dataset.page = String(i);
+        wrapper.style.minHeight = estHeight + 'px';
+        wrapper.style.width = '100%';
+        wrapper.style.display = 'flex';
+        wrapper.style.flexDirection = 'column';
+        wrapper.style.alignItems = 'center';
+        wrapper.style.marginBottom = '22px';
+
+        const canvas = document.createElement('canvas');
+        canvas.className = 'pdf-page-canvas';
+        canvas.style.width = estWidth + 'px';
+        canvas.style.height = estHeight + 'px';
+        canvas.dir = 'ltr';
+        canvas.style.direction = 'ltr';
+        wrapper.appendChild(canvas);
+
+        const badge = document.createElement('div');
+        badge.className = 'pdf-page-num-indicator';
+        badge.innerHTML = '<span class="t-ar">صفحة ' + i + ' من ' + total + '</span><span class="t-en">Page ' + i + ' of ' + total + '</span>';
+        wrapper.appendChild(badge);
+
+        host.appendChild(wrapper);
+      }
+
+      async function renderContinuousItem(pageNum, wrapper, canvas) {
+        if (canvas._rendered || canvas._rendering) return;
+        if (pdfState.doc !== currentDoc) return;
+        canvas._rendering = true;
+
+        try {
+          const page = await currentDoc.getPage(pageNum);
           if (pdfState.doc !== currentDoc) return;
+
           const unscaled = page.getViewport({ scale: 1 });
-          const cssScale = pdfState.scaleMode === 'fit-width' ? (containerWidth / unscaled.width) : pdfState.currentScale;
+          const curC = document.getElementById('pdfCanvasContainer');
+          const curWidth = Math.max(280, (curC ? curC.clientWidth : window.innerWidth) - 28);
+          const curCssScale = pdfState.scaleMode === 'fit-width' ? (curWidth / unscaled.width) : pdfState.currentScale;
           const dpr = window.devicePixelRatio || 1;
-          const renderScale = Math.max(2.2, cssScale * Math.max(2.5, dpr * 2.0));
+          const renderScale = Math.max(2.2, curCssScale * Math.max(2.5, dpr * 2.0));
           const vp = page.getViewport({ scale: renderScale });
 
-          c.width = Math.floor(vp.width);
-          c.height = Math.floor(vp.height);
-          c.style.width = Math.floor(unscaled.width * cssScale) + 'px';
-          c.style.height = Math.floor(unscaled.height * cssScale) + 'px';
+          canvas.width = Math.floor(vp.width);
+          canvas.height = Math.floor(vp.height);
+          canvas.style.width = Math.floor(unscaled.width * curCssScale) + 'px';
+          canvas.style.height = Math.floor(unscaled.height * curCssScale) + 'px';
+          wrapper.style.minHeight = Math.floor(unscaled.height * curCssScale) + 'px';
 
-          c.dir = 'ltr';
-          c.style.direction = 'ltr';
+          canvas.dir = 'ltr';
+          canvas.style.direction = 'ltr';
 
-          const ctx = c.getContext('2d', { alpha: false });
+          const ctx = canvas.getContext('2d', { alpha: false });
           ctx.imageSmoothingEnabled = true;
           ctx.imageSmoothingQuality = 'high';
           ctx.direction = 'ltr';
@@ -923,27 +971,95 @@
             }
           } catch (e) {}
 
+          if (pdfState.doc !== currentDoc) return;
+
           const task = page.render({ canvasContext: ctx, viewport: vp });
-          c._renderTask = task;
-          task.promise.then(() => {
-            if (c._renderTask === task) c._renderTask = null;
-          }).catch((err) => {
-            if (err && err.name === 'RenderingCancelledException') return;
+          canvas._renderTask = task;
+          await task.promise;
+          canvas._rendered = true;
+        } catch (err) {
+          if (err && err.name === 'RenderingCancelledException') return;
+          console.warn('Continuous render note:', err);
+        } finally {
+          canvas._rendering = false;
+          canvas._renderTask = null;
+        }
+      }
+
+      // Pre-render current page and next 3 pages immediately
+      const startP = Math.max(1, pdfState.currentPage || 1);
+      const preMax = Math.min(total, startP + 3);
+      for (let p = startP; p <= preMax; p++) {
+        const wrap = host.querySelector('.pdf-continuous-page[data-page="' + p + '"]');
+        if (wrap) {
+          const c = wrap.querySelector('canvas');
+          if (c) renderContinuousItem(p, wrap, c);
+        }
+      }
+
+      // IntersectionObserver for lazy-loading all remaining pages
+      if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              const pNum = parseInt(entry.target.dataset.page, 10);
+              const c = entry.target.querySelector('canvas');
+              if (c && !c._rendered && !c._rendering) {
+                renderContinuousItem(pNum, entry.target, c);
+              }
+              // Keep page input updated as user scrolls
+              if (entry.boundingClientRect.top >= -200 && entry.boundingClientRect.top < window.innerHeight * 0.5) {
+                pdfState.currentPage = pNum;
+                const pageInput = document.getElementById('pdfPageInput');
+                if (pageInput) pageInput.value = String(pNum);
+                const prevBtn = document.getElementById('pdfPrevBtn');
+                if (prevBtn) prevBtn.disabled = pNum <= 1;
+                const nextBtn = document.getElementById('pdfNextBtn');
+                if (nextBtn) nextBtn.disabled = pNum >= pdfState.totalPages;
+              }
+            }
           });
-        }).catch((err) => {
-          console.warn('Continuous page note:', err);
+        }, {
+          root: container,
+          rootMargin: '1200px 0px 1200px 0px',
+          threshold: [0, 0.25]
         });
-      })(i, canvas);
-    }
+
+        pdfState._pageObserver = observer;
+        host.querySelectorAll('.pdf-continuous-page').forEach((el) => observer.observe(el));
+      }
+    }).catch((err) => {
+      console.warn('Continuous init note:', err);
+    });
   }
 
   function changePdfPage(delta) {
     if (!pdfState.doc) return;
-    renderSinglePage(pdfState.currentPage + delta);
+    setPdfPage(pdfState.currentPage + delta);
   }
 
   function setPdfPage(num) {
     if (!pdfState.doc || isNaN(num)) return;
+    num = Math.max(1, Math.min(num, pdfState.totalPages));
+    pdfState.currentPage = num;
+    if (pdfState.scrollMode === 'continuous') {
+      const targetEl = document.querySelector('.pdf-continuous-page[data-page="' + num + '"]');
+      if (targetEl) {
+        targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const c = targetEl.querySelector('canvas');
+        if (c && !c._rendered && !c._rendering) {
+          const wrap = targetEl;
+          // Trigger render via observer or immediately
+        }
+      }
+      const pageInput = document.getElementById('pdfPageInput');
+      if (pageInput) pageInput.value = String(num);
+      const prevBtn = document.getElementById('pdfPrevBtn');
+      if (prevBtn) prevBtn.disabled = num <= 1;
+      const nextBtn = document.getElementById('pdfNextBtn');
+      if (nextBtn) nextBtn.disabled = num >= pdfState.totalPages;
+      return;
+    }
     renderSinglePage(num);
   }
 
@@ -1850,6 +1966,41 @@
       if (link) toggleNav(false);
     });
 
+    // Download analytics tracking
+    document.addEventListener('click', (event) => {
+      // 1. Toolbar PDF download button
+      const toolbarDl = event.target.closest('#pdfDownload');
+      if (toolbarDl && pdfState.item && window.YAHYA_COUNTER) {
+        if (pdfState.item.cat) {
+          window.YAHYA_COUNTER.trackBookDownload(pdfState.item.id, titleOf(pdfState.item), pdfState.url);
+        } else if (pdfState.item.venue_ar) {
+          window.YAHYA_COUNTER.trackPaperDownload(pdfState.item.id, titleOf(pdfState.item), pdfState.url);
+        }
+        return;
+      }
+
+      // 2. Book modal or card download
+      const bookDl = event.target.closest('[data-download-book], a.card-btn--download, a[download][href*=".pdf"]');
+      if (bookDl && window.YAHYA_COUNTER) {
+        const bookId = bookDl.dataset.downloadBook || (bookDl.closest('.book-card') && bookDl.closest('.book-card').dataset.id);
+        if (bookId) {
+          const b = Y.BOOKS && Y.BOOKS.find((x) => x.id === bookId);
+          window.YAHYA_COUNTER.trackBookDownload(bookId, b ? titleOf(b) : bookId, bookDl.getAttribute('href'));
+        }
+      }
+
+      // 3. Paper modal or card download
+      const paperDl = event.target.closest('[data-download-paper], .btn-download');
+      if (paperDl && window.YAHYA_COUNTER) {
+        const paperRowEl = paperDl.closest('.paper-row');
+        const paperId = paperDl.dataset.downloadPaper || (paperRowEl && paperRowEl.querySelector('[data-action="open-paper"]') && paperRowEl.querySelector('[data-action="open-paper"]').dataset.id);
+        if (paperId) {
+          const p = Y.PAPERS && Y.PAPERS.find((x) => x.id === paperId);
+          window.YAHYA_COUNTER.trackPaperDownload(paperId, p ? titleOf(p) : paperId, paperDl.getAttribute('href'));
+        }
+      }
+    });
+
     document.addEventListener('keydown', (event) => {
       if (event.key === 'Escape' && navOpen) toggleNav(false);
       if (event.key === '/' && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) {
@@ -1891,6 +2042,7 @@
     boot();
     if (window.YAHYA_COUNTER) { window.YAHYA_COUNTER.init(); }
   }
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', startSite);
   } else {

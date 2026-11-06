@@ -1309,6 +1309,7 @@ dialog[open]{animation:dialogIn .22s var(--ease)}
   a{text-decoration:none;color:#111}
 }
 
+
 /* ============================================================
    Analytics & Live Counters Styling
    ============================================================ */
@@ -1359,6 +1360,28 @@ dialog[open]{animation:dialogIn .22s var(--ease)}
   color: var(--green);
   font-weight: 700;
 }
+.card-counter-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.card-counter-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.card-counter-item svg {
+  width: 13px;
+  height: 13px;
+  color: var(--brass);
+}
+.card-counter-item strong {
+  color: var(--green);
+  font-weight: 600;
+}
 .forthcoming-grid, .references-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -1381,4 +1404,21 @@ dialog[open]{animation:dialogIn .22s var(--ease)}
   width: 15px;
   height: 15px;
   color: var(--brass);
+}
+.pdf-continuous-page {
+  position: relative;
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 480px;
+  width: 100%;
+}
+.pdf-page-num-indicator {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #7a6a57;
+  font-weight: 600;
+  letter-spacing: .3px;
 }

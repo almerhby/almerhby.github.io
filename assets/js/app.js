@@ -546,6 +546,10 @@
       '<div class="book-info"><h3 class="book-title' + textDirectionClass(book) + '">' + esc(titleOf(book)) + '</h3>' +
       '<div class="book-meta"><span>' + esc(book.year) + '</span><span class="dot"></span><span>' + esc(bookTypeLabel(book.typ)) + '</span>' +
       (book.pages ? '<span class="dot"></span><span>' + esc(book.pages) + ' ' + esc(t('pages')) + '</span>' : '') +
+      '</div>' +
+      '<div class="card-counter-row">' +
+      '<span class="card-counter-item" title="' + (lang === 'ar' ? 'عدد القراءات' : 'Total reads') + '">' + I.eye + '<strong data-book-reads="' + esc(book.id) + '">' + ((window.YAHYA_COUNTER && window.YAHYA_COUNTER.getBookStats(book.id).reads) || 0).toLocaleString('en-US') + '</strong> <span class="t-ar">قراءة</span><span class="t-en">reads</span></span>' +
+      (hasPdf ? '<span class="card-counter-item" title="' + (lang === 'ar' ? 'مرات التحميل' : 'Total downloads') + '">' + I.download + '<strong data-book-downloads="' + esc(book.id) + '">' + ((window.YAHYA_COUNTER && window.YAHYA_COUNTER.getBookStats(book.id).downloads) || 0).toLocaleString('en-US') + '</strong> <span class="t-ar">تحميل</span><span class="t-en">downloads</span></span>' : '') +
       '</div></div></div>' +
       '<div class="book-card-actions">' +
       (hasPdf ? '<button class="card-btn card-btn--primary" type="button" data-action="pdf-book" data-id="' + esc(book.id) + '" aria-label="' + esc(t('readNow')) + '">' + I.bookOpen + '<span>' + esc(t('readNow')) + '</span></button>' : '') +
@@ -577,7 +581,10 @@
     return '<div class="paper-row">' +
       '<div class="paper-num">' + String(index + 1).padStart(2, '0') + '</div>' +
       '<div class="paper-body"><h3><a href="' + paperUrl(paper.id) + '" data-action="open-paper" data-id="' + esc(paper.id) + '" class="' + (titleIsArabicOnly(paper) ? 'ar-text' : '') + '">' + esc(title) + '</a></h3>' +
-      '<div class="paper-venue"><span>' + I.calendar + esc(paper.year) + '</span><span>' + I.bookOpen + esc(venueOf(paper)) + '</span>' + (placeOf(paper) ? '<span>' + I.pin + esc(placeOf(paper)) + '</span>' : '') + '</div>' +
+      '<div class="paper-venue"><span>' + I.calendar + esc(paper.year) + '</span><span>' + I.bookOpen + esc(venueOf(paper)) + '</span>' + (placeOf(paper) ? '<span>' + I.pin + esc(placeOf(paper)) + '</span>' : '') +
+      '<span class="card-counter-item" style="margin-inline-start:8px" title="' + (lang === 'ar' ? 'عدد القراءات' : 'Total reads') + '">' + I.eye + '<strong data-paper-reads="' + esc(paper.id) + '">' + ((window.YAHYA_COUNTER && window.YAHYA_COUNTER.getPaperStats(paper.id).reads) || 0).toLocaleString('en-US') + '</strong> <span class="t-ar">قراءة</span><span class="t-en">reads</span></span>' +
+      (hasPdf ? '<span class="card-counter-item" title="' + (lang === 'ar' ? 'مرات التحميل' : 'Total downloads') + '">' + I.download + '<strong data-paper-downloads="' + esc(paper.id) + '">' + ((window.YAHYA_COUNTER && window.YAHYA_COUNTER.getPaperStats(paper.id).downloads) || 0).toLocaleString('en-US') + '</strong> <span class="t-ar">تحميل</span><span class="t-en">downloads</span></span>' : '') +
+      '</div>' +
       (abs ? '<p class="paper-abs' + (lang === 'en' && !paper.abs_en ? ' ar-text' : '') + '">' + esc(abs) + '</p>' : '') + '</div>' +
       '<div class="paper-actions">' +
       (hasPdf ? '<button class="btn btn-sm btn-light" type="button" data-action="pdf-paper" data-id="' + esc(paper.id) + '" aria-label="' + esc(t('readPdf')) + '">' + I.bookOpen + '<span>' + esc(t('readPdf')) + '</span></button>' : '') +
