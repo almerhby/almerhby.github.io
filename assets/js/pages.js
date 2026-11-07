@@ -120,8 +120,9 @@
       sectionHead(t('peerReviewed'), t('peerReviewedLead'), 'research.html', t('allResearch')) +
       '<div class="paper-list">' + papers.map((paper, index) => paperRow(paper, index)).join('') + '</div></div></section>' +
       '<section class="section"><div class="container">' +
-      sectionHead(t('recentWriting'), t('recentWritingLead'), 'articles.html', t('allWriting')) +
-      '<div class="article-grid">' + picks.map((article) => articleCard(article)).join('') + '</div></div></section>' +
+      sectionHead(t('recentWriting'), (ar() ? 'مختارات من أصل ' + Y.INDEX.length + ' مقالة ودراسة موثقة' : 'Selected from ' + Y.INDEX.length + ' verified essays'), 'articles.html', (ar() ? 'استعراض كل المقالات (' + Y.INDEX.length + ')' : 'Browse all ' + Y.INDEX.length + ' articles')) +
+      '<div class="article-grid">' + picks.map((article) => articleCard(article)).join('') + '</div>' +
+      '<div style="text-align:center;margin-top:28px"><a class="btn btn-ghost" href="articles.html">' + I.bookOpen + '<span>' + (ar() ? 'تصفح كافة المقالات والكتابات (' + Y.INDEX.length + ' مقال)' : 'Explore full writing archive (' + Y.INDEX.length + ' articles)') + '</span><span class="' + (ar() ? 'arrow-flip' : '') + '">' + I.arrow + '</span></a></div></div></section>' +
       '<section class="quote-section"><div class="container"><div class="quote-inner">' +
       '<div><div class="quote-mark">“</div><p class="quote-text">' + (ar()
         ? 'ما طال عمر باطل إلا حين ارتدى ثوب الحق، وما استمرأ ظالم ظلمه إلا حين أقنع ضحاياه أنه جاء ليخلصهم.'
@@ -400,7 +401,7 @@
   /* ============================================================
      Articles archive
      ============================================================ */
-  const articleState = { source: 'all', category: 'all', q: '', sort: 'newest', limit: 9 };
+  const articleState = { source: 'all', category: 'all', q: '', sort: 'newest', limit: 12, step: 12 };
   let articleStateReady = false;
 
   pages.articles = function articlesPage() {
@@ -410,6 +411,9 @@
       if (['facebook', 'hekmah', 'aljazeera'].includes(source)) articleState.source = source;
       const q = params.get('q');
       if (q) articleState.q = q;
+      const limitParam = params.get('limit');
+      if (limitParam === 'all') articleState.limit = 9999;
+      else if (parseInt(limitParam, 10) > 0) articleState.limit = parseInt(limitParam, 10);
       articleStateReady = true;
     }
     setTitle('المقالات والكتابات — د. يحيى أحمد المرهبي', 'Writing Archive — Dr. Yahya Ahmed Al-Marhabi');
@@ -432,6 +436,16 @@
         return '<option value="' + esc(cat) + '"' + (articleState.category === cat ? ' selected' : '') + '>' + esc(label) + '</option>';
       }).join('');
 
+    const limitOptions = [
+      [12, ar() ? 'عرض 12 مقالاً' : 'Show 12'],
+      [24, ar() ? 'عرض 24 مقالاً' : 'Show 24'],
+      [48, ar() ? 'عرض 48 مقالاً' : 'Show 48'],
+      ['all', ar() ? 'عرض الكل (' + Y.INDEX.length + ')' : 'Show all (' + Y.INDEX.length + ')']
+    ].map(([val, label]) => {
+      const sel = (val === 'all' && articleState.limit >= 1000) || (Number(val) === articleState.limit);
+      return '<option value="' + esc(val) + '"' + (sel ? ' selected' : '') + '>' + esc(label) + '</option>';
+    }).join('');
+
     root().innerHTML = pageHero({
       crumbs: [{ label: t('articles') }],
       eyebrow: ar() ? 'أرشيف الكتابة' : 'The writing archive',
@@ -449,12 +463,15 @@
       '<div class="select-wrap"><label class="sr-only" for="articleSort">' + esc(t('sort')) + '</label><select id="articleSort">' +
       '<option value="newest"' + (articleState.sort === 'newest' ? ' selected' : '') + '>' + esc(t('newest')) + '</option>' +
       '<option value="oldest"' + (articleState.sort === 'oldest' ? ' selected' : '') + '>' + esc(t('oldest')) + '</option>' +
-      '</select></div></div></div><div id="articleResults"></div></div></section>';
+      '</select></div>' +
+      '<div class="select-wrap"><label class="sr-only" for="articleLimit">' + esc(ar() ? 'عدد المقالات المعروضة' : 'Articles to display') + '</label><select id="articleLimit" title="' + esc(ar() ? 'تحديد عدد المقالات المعروضة' : 'Select number of articles to show') + '">' + limitOptions + '</select></div>' +
+      '</div></div><div id="articleResults"></div></div></section>';
 
     const results = document.getElementById('articleResults');
     const search = document.getElementById('articleSearch');
     const category = document.getElementById('articleCategory');
     const sort = document.getElementById('articleSort');
+    const limitSelect = document.getElementById('articleLimit');
 
     function filtered() {
       const q = normalize(articleState.q);
@@ -473,31 +490,101 @@
 
     function paint() {
       const list = filtered();
-      const visible = list.slice(0, articleState.limit);
-      results.innerHTML = '<div class="results-meta">' + resultsLine(visible.length, list.length, ar() ? 'مقالة' : 'essays') + '</div>' +
+      const currentLimit = articleState.limit >= 1000 ? list.length : articleState.limit;
+      const visible = list.slice(0, currentLimit);
+      const remaining = Math.max(0, list.length - visible.length);
+      const percent = list.length ? Math.min(100, Math.round((visible.length / list.length) * 100)) : 100;
+
+      const metaHTML = '<div class="results-meta">' +
+        '<div class="results-meta-left">' +
+        '<span class="results-badge">' + (ar() ? 'معروض <strong>' + visible.length + '</strong> من إجمالي <strong>' + list.length + '</strong> مقالاً' : 'Showing <strong>' + visible.length + '</strong> of <strong>' + list.length + '</strong> essays') + '</span>' +
+        (list.length > 0 ? '<div class="results-progress" title="' + percent + '%"><div class="results-progress-bar" style="width:' + percent + '%"></div></div>' : '') +
+        '</div>' +
+        '<div class="results-meta-right">' +
+        '<span class="limit-chips-label">' + (ar() ? 'خيارات العرض:' : 'Show:') + '</span>' +
+        '<div class="limit-chips" role="group" aria-label="' + (ar() ? 'خيارات العرض' : 'Display options') + '">' +
+        '<button type="button" class="chip-btn' + (currentLimit === 12 && articleState.limit < 1000 ? ' active' : '') + '" data-set-limit="12">12</button>' +
+        '<button type="button" class="chip-btn' + (currentLimit === 24 ? ' active' : '') + '" data-set-limit="24">24</button>' +
+        '<button type="button" class="chip-btn' + (currentLimit === 48 ? ' active' : '') + '" data-set-limit="48">48</button>' +
+        '<button type="button" class="chip-btn' + (articleState.limit >= 1000 ? ' active' : '') + '" data-set-limit="all">' + (ar() ? 'الكل (' + list.length + ')' : 'All (' + list.length + ')') + '</button>' +
+        '</div></div></div>';
+
+      const loadMoreHTML = remaining > 0 ? '<div class="load-more-wrap">' +
+        '<button class="btn btn-primary btn-load-more" type="button" data-load-more>' +
+        I.chevronDown +
+        '<span>' + (ar() ? 'عرض 12 مقالاً إضافياً' : 'Load 12 more') + '</span>' +
+        '<span class="load-badge">' + (ar() ? 'متبقي ' + remaining : remaining + ' left') + '</span>' +
+        '</button>' +
+        '<button class="btn btn-ghost btn-load-all" type="button" data-load-all>' +
+        I.bookOpen +
+        '<span>' + (ar() ? 'عرض كافة المقالات المتبقية (' + remaining + ')' : 'Show all remaining (' + remaining + ')') + '</span>' +
+        '</button>' +
+        '</div>' : '';
+
+      results.innerHTML = metaHTML +
         (visible.length ? '<div class="article-grid">' + visible.map((article) => articleCard(article)).join('') + '</div>' : emptyState(t('noResults'), t('noResultsText'))) +
-        (list.length > articleState.limit ? '<div class="load-more-wrap">' + loadMoreButton() + '</div>' : '');
+        loadMoreHTML;
     }
 
     root().querySelectorAll('[data-article-source]').forEach((button) => {
       button.addEventListener('click', () => {
         articleState.source = button.dataset.articleSource;
-        articleState.limit = 9;
+        if (articleState.limit < 12) articleState.limit = 12;
         root().querySelectorAll('[data-article-source]').forEach((b) => b.classList.toggle('active', b === button));
         paint();
       });
     });
-    search.addEventListener('input', () => { articleState.q = search.value; articleState.limit = 9; paint(); });
-    category.addEventListener('change', () => { articleState.category = category.value; articleState.limit = 9; paint(); });
-    sort.addEventListener('change', () => { articleState.sort = sort.value; paint(); });
-    results.addEventListener('click', (event) => {
-      if (event.target.closest('[data-load-more]')) {
-        articleState.limit += 9;
+
+    search.addEventListener('input', () => {
+      articleState.q = search.value;
+      if (articleState.limit < 12) articleState.limit = 12;
+      paint();
+    });
+
+    category.addEventListener('change', () => {
+      articleState.category = category.value;
+      if (articleState.limit < 12) articleState.limit = 12;
+      paint();
+    });
+
+    sort.addEventListener('change', () => {
+      articleState.sort = sort.value;
+      paint();
+    });
+
+    if (limitSelect) {
+      limitSelect.addEventListener('change', () => {
+        const val = limitSelect.value;
+        articleState.limit = val === 'all' ? 9999 : parseInt(val, 10);
         paint();
-        const meta = results.querySelector('.results-meta');
-        if (meta) meta.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
+
+    results.addEventListener('click', (event) => {
+      const loadMoreBtn = event.target.closest('[data-load-more]');
+      if (loadMoreBtn) {
+        articleState.limit = (articleState.limit >= 1000 ? filtered().length : articleState.limit) + 12;
+        if (limitSelect) limitSelect.value = articleState.limit >= filtered().length ? 'all' : (articleState.limit === 24 || articleState.limit === 48 ? String(articleState.limit) : '12');
+        paint();
+        return;
+      }
+      const loadAllBtn = event.target.closest('[data-load-all]');
+      if (loadAllBtn) {
+        articleState.limit = 9999;
+        if (limitSelect) limitSelect.value = 'all';
+        paint();
+        return;
+      }
+      const chipBtn = event.target.closest('[data-set-limit]');
+      if (chipBtn) {
+        const val = chipBtn.dataset.setLimit;
+        articleState.limit = val === 'all' ? 9999 : parseInt(val, 10);
+        if (limitSelect) limitSelect.value = val;
+        paint();
+        return;
       }
     });
+
     paint();
   };
 
