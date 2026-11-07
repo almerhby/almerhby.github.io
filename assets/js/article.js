@@ -40,10 +40,12 @@
     setMeta('meta[property="og:description"]', 'content', description);
     setMeta('meta[property="og:type"]', 'content', 'article');
     setMeta('meta[property="og:url"]', 'content', url);
-    setMeta('meta[property="og:image"]', 'content', absolute(Y.PORTRAIT));
+    const metaImg = article.image ? absolute(article.image) : absolute(Y.PORTRAIT);
+    setMeta('meta[property="og:image"]', 'content', metaImg);
     setMeta('meta[name="twitter:card"]', 'content', 'summary_large_image');
     setMeta('meta[name="twitter:title"]', 'content', title);
     setMeta('meta[name="twitter:description"]', 'content', description);
+    setMeta('meta[name="twitter:image"]', 'content', metaImg);
     setCanonical(url);
 
     let schema = document.getElementById('articleSchema');
@@ -64,7 +66,7 @@
       inLanguage: 'ar',
       url: url,
       mainEntityOfPage: url,
-      image: absolute(Y.PORTRAIT),
+      image: metaImg,
       author: {
         '@type': 'Person',
         name: P.name_en || 'Dr. Yahya Ahmed Al-Marhabi',
@@ -217,6 +219,7 @@
       '</div></header>' +
       '<div class="article-layout"><div class="article-main">' +
       '<div class="article-note">' + I.info + '<span>' + esc(note) + '</span></div>' +
+      (article.image ? '<figure class="article-hero-image"><img src="' + esc(article.image) + '" alt="' + esc(title) + '" loading="lazy">' + (article.image_caption ? '<figcaption class="article-hero-caption">' + esc(article.image_caption) + '</figcaption>' : '') + '</figure>' : '') +
       '<div class="article-body" dir="rtl" lang="ar">' + articleBody(article) + '</div>' +
       (tags.length ? '<div class="article-tags">' + tags.map((tag) => '<span class="chip" dir="auto">' + esc(tag) + '</span>').join('') + '</div>' : '') +
       '<div class="article-source-box"><span>' + esc(t('originalSource')) + ': ' + esc(sourceLabel(article.source)) + ' · ' + esc(formatDate(article.date)) + '</span>' +

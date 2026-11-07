@@ -635,7 +635,9 @@
     const excerpt = excerptOf(article);
     const read = articleRead(article);
     const series = article.parts_count ? '<span class="chip chip--green">' + esc(article.parts_count) + ' ' + esc(t('parts')) + '</span>' : '';
-    return '<article class="article-card' + (featured || article.featured ? ' featured' : '') + '">' +
+    const thumb = article.image ? '<a class="article-card-thumb" href="' + href + '" aria-label="' + esc(title) + '"><img src="' + esc(article.image) + '" alt="' + esc(title) + '" loading="lazy"></a>' : '';
+    return '<article class="article-card' + (featured || article.featured ? ' featured' : '') + (article.image ? ' has-thumb' : '') + '">' +
+      thumb +
       '<div class="article-top">' + sourceBadge(article.source) + '<time class="article-date" datetime="' + esc(article.date) + '">' + esc(formatDate(article.date)) + '</time></div>' +
       '<h3 class="' + (titleIsArabicOnly(article) ? 'ar-text' : '') + '"><a href="' + href + '">' + esc(title) + '</a></h3>' +
       (excerpt ? '<p class="article-excerpt' + (excerptIsArabicOnly(article) ? ' ar-text' : '') + '">' + esc(excerpt) + '</p>' : '') +
