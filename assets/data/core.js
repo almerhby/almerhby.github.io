@@ -1,4 +1,4 @@
-window.SITE = {
+﻿window.SITE = {
     "profile":  {
                     "name_ar":  "د. يحيى أحمد حسين المرهبي",
                     "name_en":  "Dr. Yahya Ahmed Hussein Al-Marhabi",
@@ -1181,7 +1181,7 @@ window.SITE = {
     "stats":  {
                   "books":  15,
                   "papers":  13,
-                  "articles": 113,
+                  "articles": 116,
                   "years":  "35+",
                   "series":  50,
                   "pieces":  157
