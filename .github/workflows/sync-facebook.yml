@@ -1,15 +1,11 @@
 name: Sync Facebook Articles
 
 on:
-  # 1. المجدول الدوري التلقائي (يعمل أسبوعياً فجر الأحد والأربعاء)
+  # يعمل تلقائياً 3 مرات يومياً (09:00 ص، 04:00 م، 11:00 م بتوقيت مكة واليمن)
   schedule:
-    - cron: '0 3 * * 0,3'
+    - cron: '0 6,13,20 * * *'
 
-  # 2. الاستقبال الفوري من Make.com عبر Webhook
-  repository_dispatch:
-    types: [facebook_sync, new_post, make_trigger]
-
-  # 3. إمكانية التشغيل اليدوي بضغطة زر من تبويب Actions
+  # زر تشغيل يدوي فوري من صفحة Actions
   workflow_dispatch:
 
 permissions:
@@ -25,23 +21,21 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: تجهيز بيئة Node.js
+      - name: تجهيز Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
       - name: تشغيل محرك سحب منشورات فيسبوك
         run: node scripts/sync-facebook.js
-        env:
-          GITHUB_EVENT_PATH: ${{ github.event_path }}
 
-      - name: حفظ المقالات والصور ورفعها للموقع
+      - name: حفظ التغييرات وتحديث الموقع
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add assets/data/article-index.js assets/data/article-content.js assets/data/core.js assets/images/articles/ sitemap.xml
           if git diff --staged --quiet; then
-            echo "لا توجد منشورات جديدة. كل شيء محدث."
+            echo "لا توجد مقالات جديدة. كل شيء محدث."
           else
             git commit -m "تحديث تلقائي: مزامنة مقالات فيسبوك الجديدة [skip ci]"
             git push origin main
