@@ -1181,10 +1181,10 @@
     "stats":  {
                   "books":  15,
                   "papers":  13,
-                  "articles": 116,
+                  "articles": 119,
                   "years":  "35+",
                   "series":  50,
-                  "pieces":  157
+                  "pieces":  163
               },
     "collections":  [
                         {
