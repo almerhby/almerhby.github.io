@@ -2,8 +2,9 @@
  * Automated Facebook Sync Script for Dr. Yahya Al-Marhabi's Official Website
  * Supports:
  * 1. Scheduled GitHub Actions (Crawler/Scraper Mode with zero external dependencies)
- * 2. Make.com / Webhook Payloads (repository_dispatch with client_payload)
- * 3. Local manual invocation via `node scripts/sync-facebook.js`
+ * 2. Lookaside & Preload High-Res Image Extractor (Auto-downloads post illustrations)
+ * 3. Self-healing Image Repair (Re-fetches and fixes any missing images for recent articles)
+ * 4. Local manual invocation via `node scripts/sync-facebook.js` or `sync-articles.bat`
  */
 
 const https = require('https');
@@ -27,7 +28,7 @@ function fetchUrl(targetUrl, customHeaders = {}, redirectCount = 0) {
     const client = parsed.protocol === 'https:' ? https : http;
     const headers = Object.assign({
       'User-Agent': 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)',
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/*,*/*;q=0.8',
       'Accept-Language': 'ar,en-US;q=0.7,en;q=0.3'
     }, customHeaders);
 
@@ -66,9 +67,14 @@ async function downloadImage(imgUrl, destFilename) {
   const destPath = path.join(IMAGES_DIR, destFilename);
   try {
     const res = await fetchUrl(imgUrl, {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      'User-Agent': 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)'
     });
-    if (res.body && res.body.length > 500) {
+    if (res.body && res.body.length > 2000) {
+      // Check content-type or valid image header
+      const contentType = (res.headers && res.headers['content-type']) || '';
+      if (contentType.includes('text/html') && !contentType.includes('image')) {
+        return '';
+      }
       fs.writeFileSync(destPath, res.body);
       console.log(`[SYNC] Downloaded image: ${destFilename} (${res.body.length} bytes)`);
       return `assets/images/articles/${destFilename}`;
@@ -76,6 +82,57 @@ async function downloadImage(imgUrl, destFilename) {
   } catch (e) {
     console.warn(`[SYNC] Failed to download image from ${imgUrl}:`, e.message);
   }
+  return '';
+}
+
+async function resolveAndDownloadImage(postId, snippet, fullHtml) {
+  const numericId = String(postId).replace(/^fb-/, '');
+  if (!/^\d+$/.test(numericId)) return '';
+
+  const candidates = [];
+
+  // Strategy 1: Check Preload tags in the full page HTML
+  if (fullHtml) {
+    const preloadRegex = new RegExp(`href="([^"]*media_id=${numericId}[^"]*)"`, 'i');
+    const match = fullHtml.match(preloadRegex);
+    if (match) {
+      candidates.push(match[1].replace(/&amp;/g, '&'));
+    }
+  }
+
+  // Strategy 2: Official Facebook Crawler Media Lookaside Endpoint
+  candidates.push(`https://lookaside.fbsbx.com/lookaside/crawler/media/?media_id=${numericId}`);
+
+  // Strategy 3: Check snippet for any direct fbcdn.net URI
+  if (snippet) {
+    const fbcdnMatches = snippet.match(/https:[^"'<>\s\\]+fbcdn\.net[^"'<>\s\\]+/g) || [];
+    for (const m of fbcdnMatches) {
+      const unescaped = m.replace(/\\u0025/g, '%').replace(/\\\//g, '/').replace(/\\/g, '').replace(/&amp;/g, '&');
+      candidates.push(unescaped);
+    }
+  }
+
+  // Strategy 4: Search around numericId in fullHtml for direct image CDN links
+  if (fullHtml) {
+    const idPos = fullHtml.indexOf(numericId);
+    if (idPos !== -1) {
+      const localSlice = fullHtml.substring(Math.max(0, idPos - 1500), Math.min(fullHtml.length, idPos + 2500));
+      const sliceMatches = localSlice.match(/https:[^"'<>\s\\]+fbcdn\.net[^"'<>\s\\]+/g) || [];
+      for (const m of sliceMatches) {
+        const unescaped = m.replace(/\\u0025/g, '%').replace(/\\\//g, '/').replace(/\\/g, '').replace(/&amp;/g, '&');
+        candidates.push(unescaped);
+      }
+    }
+  }
+
+  const destFilename = `fb-${numericId}.jpg`;
+  for (const cUrl of candidates) {
+    const downloadedPath = await downloadImage(cUrl, destFilename);
+    if (downloadedPath) {
+      return downloadedPath;
+    }
+  }
+
   return '';
 }
 
@@ -116,13 +173,17 @@ function saveDatasets(articleIndex, articleContent) {
   // 3. core.js stats
   let coreSrc = fs.readFileSync(CORE_FILE, 'utf8');
   const count = articleIndex.length;
-  coreSrc = coreSrc.replace(/articles:\s*\d+/, `articles: ${count}`);
-  const piecesMatch = coreSrc.match(/books:\s*(\d+).*?papers:\s*(\d+)/s);
-  if (piecesMatch) {
-    const books = parseInt(piecesMatch[1], 10) || 15;
-    const papers = parseInt(piecesMatch[2], 10) || 13;
-    const totalPieces = books + papers + count;
-    coreSrc = coreSrc.replace(/pieces:\s*\d+/, `pieces: ${totalPieces}`);
+  const prevArticlesMatch = coreSrc.match(/(["']?articles["']?\s*:\s*)(\d+)/);
+  const prevCount = prevArticlesMatch ? parseInt(prevArticlesMatch[2], 10) : count;
+  const diff = count - prevCount;
+
+  coreSrc = coreSrc.replace(/(["']?articles["']?\s*:\s*)\d+/, `$1${count}`);
+  if (diff !== 0) {
+    const prevPiecesMatch = coreSrc.match(/(["']?pieces["']?\s*:\s*)(\d+)/);
+    if (prevPiecesMatch) {
+      const prevPieces = parseInt(prevPiecesMatch[2], 10);
+      coreSrc = coreSrc.replace(/(["']?pieces["']?\s*:\s*)\d+/, `$1${prevPieces + diff}`);
+    }
   }
   fs.writeFileSync(CORE_FILE, coreSrc, 'utf8');
 
@@ -143,6 +204,10 @@ function saveDatasets(articleIndex, articleContent) {
 function normalizeTitle(rawText) {
   const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
   let title = (lines[0] || 'مقال فكري').replace(/^["'«]+|["'»]+$/g, '').trim();
+  // If line 0 is author name or date, use line 1
+  if (title.includes('المرهبي') || title.match(/^\d{1,2}\s+[^\s]+\s+\d{4}/)) {
+    title = (lines[1] || lines[0] || 'مقال فكري').replace(/^["'«]+|["'»]+$/g, '').trim();
+  }
   if (title.length > 90) {
     title = title.substring(0, 85).replace(/\s+[^\s]*$/, '') + '...';
   }
@@ -151,7 +216,11 @@ function normalizeTitle(rawText) {
 
 function extractExcerpt(rawText) {
   const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
-  const body = (lines.slice(1).join(' ') || lines[0] || '').replace(/[\r\n]+/g, ' ');
+  let bodyLines = lines;
+  if (lines[0] && (lines[0].includes('المرهبي') || lines[0].match(/^\d{1,2}\s+[^\s]+\s+\d{4}/))) {
+    bodyLines = lines.slice(1);
+  }
+  const body = (bodyLines.slice(1).join(' ') || bodyLines[0] || '').replace(/[\r\n]+/g, ' ');
   if (body.length > 220) {
     return body.substring(0, 210).replace(/\s+[^\s]*$/, '') + '...';
   }
@@ -166,62 +235,32 @@ function formatParagraphs(rawText) {
 }
 
 // -------------------------------------------------------------
-// Mode 1: Process Direct Payload (from Make.com webhook)
+// Auto-repair missing images for recent articles
 // -------------------------------------------------------------
-async function processWebhookPayload(payload, currentData) {
-  console.log('[SYNC] Processing webhook payload from Make.com / Webhook...');
-  const text = (payload.text || payload.content || payload.message || '').trim();
-  if (!text || text.length < 50) {
-    console.log('[SYNC] Payload contains insufficient text. Skipping.');
-    return 0;
+async function repairMissingImages(currentData, fullHtml) {
+  console.log('[SYNC] Verifying and repairing images for recent articles...');
+  let repaired = 0;
+  // Inspect the top 20 recent articles
+  for (const item of currentData.index.slice(0, 20)) {
+    const hasValidImage = item.image && fs.existsSync(path.join(ROOT_DIR, item.image));
+    if (!hasValidImage && item.id && item.id.startsWith('fb-')) {
+      const numericId = item.id.replace('fb-', '');
+      if (/^\d+$/.test(numericId)) {
+        console.log(`[SYNC] Image missing for "${item.title_ar}" (${item.id}). Resolving...`);
+        const resolvedPath = await resolveAndDownloadImage(numericId, '', fullHtml);
+        if (resolvedPath) {
+          item.image = resolvedPath;
+          repaired++;
+          console.log(`[SYNC] Restored image for ${item.id} -> ${resolvedPath}`);
+        }
+      }
+    }
   }
-
-  const id = payload.id || `fb-${payload.post_id || Date.now()}`;
-  if (currentData.index.some(a => a.id === id)) {
-    console.log(`[SYNC] Article ${id} already exists in index. Skipping.`);
-    return 0;
-  }
-
-  const title = payload.title || normalizeTitle(text);
-  const date = payload.date || new Date().toISOString().split('T')[0];
-  const postUrl = payload.url || payload.postUrl || FB_PAGE_URL;
-  let imageRelPath = '';
-
-  if (payload.imageUrl || payload.image) {
-    const imgFilename = `${id}.jpg`;
-    imageRelPath = await downloadImage(payload.imageUrl || payload.image, imgFilename);
-  }
-
-  const newArticle = {
-    id,
-    title_ar: title,
-    title_en: payload.title_en || '',
-    date,
-    source: 'facebook',
-    source_url: postUrl,
-    category_ar: payload.category_ar || 'من صفحة الكاتب',
-    category_en: payload.category_en || 'From the Author’s Page',
-    excerpt_ar: payload.excerpt_ar || extractExcerpt(text),
-    excerpt_en: payload.excerpt_en || '',
-    image: imageRelPath,
-    tags_ar: payload.tags_ar || ['فيسبوك', 'فكر وأدب'],
-    tags_en: payload.tags_en || ['Facebook', 'Thought & Literature'],
-    kind: 'essay',
-    featured: Boolean(payload.featured),
-    series_ar: payload.series_ar || '',
-    series_en: payload.series_en || '',
-    part: payload.part || null,
-    read: Math.floor(Math.random() * 8) + 4
-  };
-
-  currentData.index.unshift(newArticle);
-  currentData.content[id] = formatParagraphs(text);
-  saveDatasets(currentData.index, currentData.content);
-  return 1;
+  return repaired;
 }
 
 // -------------------------------------------------------------
-// Mode 2: Crawler / Scraper Mode (Cron Job or fallback)
+// Scraper Mode (Cron Job, Dispatch, or Local Run)
 // -------------------------------------------------------------
 async function scrapeFacebookProfile(currentData) {
   console.log(`[SYNC] Fetching Facebook profile: ${FB_PAGE_URL}`);
@@ -240,7 +279,10 @@ async function scrapeFacebookProfile(currentData) {
 
   console.log(`[SYNC] Facebook HTML fetched. Size: ${html.length} bytes.`);
 
-  // Extract Relay message texts and metadata
+  // Step 1: Repair any missing images in existing recent articles
+  const repairedCount = await repairMissingImages(currentData, html);
+
+  // Step 2: Extract Relay message texts and metadata for new posts
   const textRegex = /"message":\s*\{\s*"text":\s*"((?:\\.|[^"\\])+)"\}/g;
   let match;
   const discoveredPosts = [];
@@ -260,11 +302,6 @@ async function scrapeFacebookProfile(currentData) {
         const idMatch = snippet.match(/"post_id":\s*"(\d+)"/) || snippet.match(/"story_fbid":\s*"(\d+)"/) || snippet.match(/posts\/(\d+)/) || snippet.match(/"id":"(\d+)"/);
         const postId = idMatch ? `fb-${idMatch[1]}` : null;
 
-        // Find image URI
-        const imgMatch = snippet.match(/"uri":\s*"(https:\\\/\\\/[^"\s]+fbcdn\.net[^"\s]+)"/) ||
-                         snippet.match(/"image":\s*\{\s*"uri":\s*"(https:\\\/\\\/[^"\s]+)"\}/);
-        const imgUrl = imgMatch ? imgMatch[1].replace(/\\\//g, '&').replace(/&amp;/g, '&') : '';
-
         // Find post URL
         const postUrlMatch = snippet.match(/https:\\\/\\\/www\.facebook\.com\\\/Yahya\.Ahmed\.Almerhbi\\\/posts\\\/([a-zA-Z0-9_-]+)/);
         const postUrl = postUrlMatch ? postUrlMatch[0].replace(/\\\//g, '/') : FB_PAGE_URL;
@@ -274,12 +311,12 @@ async function scrapeFacebookProfile(currentData) {
           text: decodedText,
           date: dateStr,
           timestamp,
-          imageUrl: imgUrl,
+          snippet,
           postUrl
         });
       }
     } catch (e) {
-      // ignore json parse error for malformed string
+      // ignore json parse error
     }
   }
 
@@ -288,7 +325,7 @@ async function scrapeFacebookProfile(currentData) {
 
   for (const post of discoveredPosts) {
     const title = normalizeTitle(post.text);
-    // Check duplication by title or exact text prefix
+    // Check duplication by id or title prefix
     const exists = currentData.index.some(a => {
       if (post.id && a.id === post.id) return true;
       if (a.title_ar && a.title_ar.includes(title.substring(0, 20))) return true;
@@ -302,10 +339,8 @@ async function scrapeFacebookProfile(currentData) {
     const assignedId = post.id || `fb-${post.timestamp || Date.now()}`;
     console.log(`[SYNC] Found NEW article: "${title}" (Date: ${post.date}, ID: ${assignedId})`);
 
-    let localImagePath = '';
-    if (post.imageUrl) {
-      localImagePath = await downloadImage(post.imageUrl, `${assignedId}.jpg`);
-    }
+    // Download image
+    const localImagePath = await resolveAndDownloadImage(assignedId, post.snippet, html);
 
     const newArticle = {
       id: assignedId,
@@ -334,14 +369,14 @@ async function scrapeFacebookProfile(currentData) {
     addedCount++;
   }
 
-  if (addedCount > 0) {
+  if (addedCount > 0 || repairedCount > 0) {
     saveDatasets(currentData.index, currentData.content);
-    console.log(`[SYNC] Added and saved ${addedCount} new articles!`);
+    console.log(`[SYNC] Changes saved: ${addedCount} new articles added, ${repairedCount} images restored.`);
   } else {
-    console.log('[SYNC] All Facebook articles are already synchronized. No new items found.');
+    console.log('[SYNC] All Facebook articles and images are fully synchronized.');
   }
 
-  return addedCount;
+  return addedCount + repairedCount;
 }
 
 // -------------------------------------------------------------
@@ -355,35 +390,9 @@ async function main() {
   const currentData = loadExistingData();
   console.log(`[SYNC] Loaded ${currentData.index.length} existing articles from database.`);
 
-  // Check if triggered with repository_dispatch payload
-  let payload = null;
-  if (process.env.GITHUB_EVENT_PATH && fs.existsSync(process.env.GITHUB_EVENT_PATH)) {
-    try {
-      const eventData = JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8'));
-      if (eventData.client_payload) {
-        payload = eventData.client_payload;
-      }
-    } catch (e) {
-      console.warn('[SYNC] Could not parse GITHUB_EVENT_PATH:', e.message);
-    }
-  }
+  const changes = await scrapeFacebookProfile(currentData);
 
-  if (!payload && process.env.MAKE_PAYLOAD) {
-    try {
-      payload = JSON.parse(process.env.MAKE_PAYLOAD);
-    } catch (e) {
-      // ignore
-    }
-  }
-
-  let added = 0;
-  if (payload && (payload.text || payload.content || payload.message)) {
-    added = await processWebhookPayload(payload, currentData);
-  } else {
-    added = await scrapeFacebookProfile(currentData);
-  }
-
-  console.log(`[SYNC] Done. Net change: +${added} articles.`);
+  console.log(`[SYNC] Completed successfully. Total modifications: ${changes}`);
   process.exit(0);
 }
 
