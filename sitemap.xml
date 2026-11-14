@@ -738,4 +738,16 @@
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
+  <url>
+    <loc>https://almerhby.github.io/article.html?id=fb-4157487704385312</loc>
+    <lastmod>2026-11-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://almerhby.github.io/article.html?id=fb-pfbid06dxtxuRbJBC5LApA7HthYpR9AqZQpxcerxxdNmzAbvpGxifR9mACsEs7KJ4QRpcgl</loc>
+    <lastmod>2026-10-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
 </urlset>
